@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Variante semplificata per 16-24 px (vassoio di sistema, liste):
+     solo il post-it giallo con barra, due righe e angolo piegato. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <path d="M4 2.5 H20.5 Q21.5 2.5 21.5 3.5 V16 L16 21.5 H4 Q2.5 21.5 2.5 20 V4 Q2.5 2.5 4 2.5 Z"
+        fill="#FFD43B" stroke="#B8860B" stroke-width="1"/>
+  <path d="M3 3 H21 V7 H3 Z" fill="#EDB80E"/>
+  <path d="M4 2.5 H20.5 Q21.5 2.5 21.5 3.5 V16 L16 21.5 H4 Q2.5 21.5 2.5 20 V4 Q2.5 2.5 4 2.5 Z"
+        fill="none" stroke="#B8860B" stroke-width="1"/>
+  <rect x="5.5" y="10" width="11" height="1.6" rx="0.8" fill="#7A5C00" fill-opacity="0.75"/>
+  <rect x="5.5" y="13.6" width="7.5" height="1.6" rx="0.8" fill="#7A5C00" fill-opacity="0.75"/>
+  <path d="M21.5 16 L16 21.5 V17.2 Q16 16 17.2 16 Z" fill="#E0A800" stroke="#B8860B" stroke-width="1" stroke-linejoin="round"/>
+</svg>

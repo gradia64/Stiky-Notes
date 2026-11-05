@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Stiky-notes
+Comment=Start Stiky-notes on login
+Exec=stiky-notes --autostart
+Icon=stiky-notes
+Hidden=false
+X-GNOME-Autostart-enabled=true
+X-KDE-autostart-after=panel
+OnlyShowIn=KDE;

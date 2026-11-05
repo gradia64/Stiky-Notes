@@ -1,0 +1,1 @@
+# platform module for kde_plasma_stiky_notes

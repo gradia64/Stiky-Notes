@@ -1,0 +1,39 @@
+Source: stiky-notes
+Section: utils
+Priority: optional
+Maintainer: Stiky-notes Developers <dev@stiky-notes.example.com>
+Build-Depends: debhelper-compat (= 13),
+               python3-all,
+               python3-hatchling,
+               python3-pyqt6,
+               pybuild-plugin-pyproject,
+               dh-python
+Standards-Version: 4.6.2
+
+Package: stiky-notes
+Architecture: all
+Depends: ${python3:Depends}, ${misc:Depends},
+         python3-pyqt6,
+         python3-pyqt6.qtqml,
+         python3-pyqt6.qtquick,
+         qml6-module-qtquick,
+         qml6-module-qtquick-window,
+         qt6-qpa-plugins
+Recommends: kde-plasma-desktop
+Description: Sticky notes application for KDE Plasma
+ Stiky-notes puts sticky notes (post-it) on the KDE Plasma desktop.
+ .
+ Each note is a small frameless window on the desktop, in the spirit of the
+ classic post-it: move it, resize it, give it a colour and a title, keep it
+ above other windows. Text, position and size are saved automatically and
+ restored at the next login.
+ .
+ Features:
+  * One window per note, 12 colours, optional "always on top"
+  * Rich text: bold, italic, underline, strikethrough, bulleted and numbered lists
+  * Reminders with a desktop notification
+  * Per-note virtual desktop, or all desktops (via KWin)
+  * Notes reopen where you left them (via XWayland on Wayland sessions)
+  * System tray icon with the list of notes, show/hide all, new note
+  * Single instance controlled over D-Bus (org.kde.StikyNotes)
+  * Optional autostart on login

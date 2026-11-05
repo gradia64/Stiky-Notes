@@ -1,0 +1,30 @@
+[Desktop Entry]
+Type=Application
+Name=Stiky-notes
+Name[it]=Stiky-notes
+GenericName=Sticky Notes
+GenericName[it]=Note adesive
+Comment=Create and manage desktop sticky notes
+Comment[it]=Crea e gestisci note adesive sul desktop
+Exec=stiky-notes
+Icon=stiky-notes
+Terminal=false
+Categories=Utility;Office;Qt;
+Keywords=note;sticky;post-it;memo;desktop;kde;plasma;
+StartupNotify=true
+StartupWMClass=stiky-notes
+Actions=NewNote;ShowAll;
+
+[Desktop Action NewNote]
+Name=New Note
+Name[it]=Nuova nota
+Exec=stiky-notes --new
+Icon=document-new
+
+[Desktop Action ShowAll]
+Name=Show All Notes
+Name[it]=Mostra tutte le note
+Exec=stiky-notes --show-all
+Icon=view-list
+
+

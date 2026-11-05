@@ -1,0 +1,27 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        # Update desktop database
+        update-desktop-database -q /usr/share/applications || true
+        
+        # Update icon cache
+        gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor 2>/dev/null || true
+        
+        # Update MIME database
+        update-mime-database /usr/share/mime 2>/dev/null || true
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+#DEBHELPER#
+
+exit 0

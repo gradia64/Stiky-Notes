@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=org.kde.StikyNotes
+Exec=/usr/bin/stiky-notes

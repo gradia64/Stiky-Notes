@@ -1,0 +1,79 @@
+stiky-notes (0.3.0-1) unstable; urgency=medium
+
+  * Formattazione del testo: grassetto, corsivo, sottolineato, barrato,
+    elenchi puntati e numerati (barra in basso e Ctrl+B/I/U)
+  * Promemoria per nota con notifica di sistema; quelli scaduti ad app
+    chiusa scattano all'avvio
+  * Desktop virtuali: ogni nota su un desktop scelto o su tutti (KWin)
+  * Nuova icona dell'applicazione (anche in formato scalabile SVG)
+
+ -- Stiky-notes Developers <dev@stiky-notes.example.com>  Thu, 05 Nov 2026 23:30:00 +0100
+
+stiky-notes (0.2.0-1) unstable; urgency=medium
+
+  * Ogni nota è ora un post-it a sé sul desktop: finestra senza bordi del
+    colore della nota, spostabile e ridimensionabile, con titolo, menu
+    (colore, sempre in primo piano, rinomina, nascondi, elimina)
+  * Posizione e dimensioni salvate e ripristinate; su Wayland l'app usa
+    XWayland per poter riposizionare le note (STIKY_NOTES_WAYLAND=1 per
+    usare Wayland nativo)
+  * Vassoio: clic per mostrare tutte le note, clic centrale per una nuova
+    nota, menu con l'elenco delle note
+  * Autostart con --autostart: al login riappaiono solo le note visibili
+  * Rimossa la finestra con l'elenco delle note
+
+ -- Stiky-notes Developers <dev@stiky-notes.example.com>  Thu, 05 Nov 2026 22:30:00 +0100
+
+stiky-notes (0.1.0-5) unstable; urgency=medium
+
+  * Istanza singola via D-Bus (org.kde.StikyNotes): un secondo avvio
+    (es. azioni "Nuova nota"/"Mostra tutte le note") inoltra la richiesta
+    all'istanza attiva invece di creare un secondo vassoio e un secondo
+    modello che sovrascriveva le note dell'altro processo
+  * Fix perdita di modifiche chiudendo l'editor con Esc o clic esterno;
+    niente più salvataggi spuri all'apertura di una nota
+  * Fix NameError all'import di note_model su Python < 3.14
+  * Caricamento note tollerante a dati corrotti o a campi sconosciuti;
+    ordine delle note stabile dopo il riavvio; z-index ripristinato
+  * Menu del vassoio: rimosse le voci non funzionanti, "Avvio automatico"
+    ora attiva/disattiva davvero l'autostart XDG
+  * Rimosso il codice non utilizzato (integrazione KDE, servizio D-Bus
+    prototipo, dialogo impostazioni, generatore .desktop, undo, ecc.)
+  * Packaging: Build-Depends per hatchling/pyproject, descrizione allineata
+    alle funzionalità reali
+
+ -- Stiky-notes Developers <dev@stiky-notes.example.com>  Thu, 05 Nov 2026 21:30:00 +0100
+
+stiky-notes (0.1.0-4) unstable; urgency=medium
+
+  * Click sul vassoio di sistema ora funziona su KDE Plasma (SNI):
+    menu del click destro registrato via setContextMenu (DBusMenu),
+    click singolo/doppio/centrale creano una nuova nota
+  * L'applicazione resta nel vassoio dopo la chiusura della finestra;
+    uscire con "Esci" dal menu del vassoio
+  * "Mostra/Nascondi tutte le note" nel menu ora mostrano/nascondono
+    la finestra principale
+
+ -- Stiky-notes Developers <dev@stiky-notes.example.com>  Thu, 05 Nov 2026 20:50:00 +0100
+
+stiky-notes (0.1.0-3) unstable; urgency=medium
+
+  * Fix crash (SIGABRT) al click sull'icona del vassoio di sistema:
+    il membro dell'enum ActivationReason per il click destro in Qt6 è
+    "Context", non "RightClick"
+
+ -- Stiky-notes Developers <dev@stiky-notes.example.com>  Thu, 05 Nov 2026 20:30:00 +0100
+
+stiky-notes (0.1.0-2) unstable; urgency=medium
+
+  * Fix SIGABRT alla chiusura dell'applicazione: teardown deterministico
+    del motore QML, disconnessione segnali in uscita, flush del debounce
+    timer alla chiusura della finestra
+
+ -- Stiky-notes Developers <dev@stiky-notes.example.com>  Thu, 05 Nov 2026 20:10:00 +0100
+
+stiky-notes (0.1.0-1) unstable; urgency=medium
+
+  * Initial release
+
+ -- Stiky-notes Developers <dev@stiky-notes.example.com>  Thu, 05 Nov 2026 18:40:00 +0100

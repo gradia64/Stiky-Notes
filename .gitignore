@@ -1,0 +1,95 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.env/
+.venv/
+env/
+ENV/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Debian packaging (artefatti di build locali)
+*.deb
+.pybuild/
+build_deb_temp/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.pytest_cache/
+.tox/
+.nox/
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Linting
+.ruff_cache/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+*.log
+*.pot
+*.mo
+*.qm
+
+# Qt
+*.qmlc
+*.jsc
+
+# Data files (exclude from version control)
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Local config
+config.local.py
+settings.local.py
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Sphinx documentation
+docs/_build/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
