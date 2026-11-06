@@ -17,6 +17,18 @@ from kde_plasma_stiky_notes.platform import autostart  # noqa: E402
 
 QSETTINGS = "kde_plasma_stiky_notes.core.note_model.QSettings"
 
+_QAPP = []
+
+
+def _qapp():
+    """QApplication condivisa, tenuta in vita per tutta la sessione di test."""
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PyQt6.QtWidgets import QApplication
+
+    if not _QAPP:
+        _QAPP.append(QApplication.instance() or QApplication([]))
+    return _QAPP[0]
+
 
 @pytest.fixture
 def model():
@@ -338,9 +350,8 @@ class TestTextFormat:
     def doc(self):
         os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
         from PyQt6.QtGui import QTextCursor, QTextDocument
-        from PyQt6.QtWidgets import QApplication
 
-        QApplication.instance() or QApplication([])
+        _qapp()
         d = QTextDocument()
         QTextCursor(d).insertText("prima riga\nseconda riga")
         return d
@@ -451,3 +462,64 @@ class TestReminders:
         at = reminders.now().replace(hour=9, minute=7)
         proposed = reminders.default_time(at)
         assert proposed > at and proposed.minute % 15 == 0 and proposed.second == 0
+
+
+class TestReminderDialog:
+    """La finestra del promemoria, guidata simulando la tastiera."""
+
+    @staticmethod
+    def _run(interact):
+        from PyQt6.QtWidgets import QDateEdit, QDialog, QTimeEdit
+
+        from kde_plasma_stiky_notes.ui import reminder_dialog
+
+        _qapp()
+
+        def fake_exec(dialog):
+            ok = interact(dialog, dialog.findChild(QDateEdit), dialog.findChild(QTimeEdit))
+            return QDialog.DialogCode.Accepted if ok else QDialog.DialogCode.Rejected
+
+        with patch.object(QDialog, "exec", fake_exec):
+            return reminder_dialog.ask_reminder("Spesa", None)
+
+    def test_hour_can_be_typed(self):
+        from PyQt6.QtCore import QDate, Qt
+        from PyQt6.QtTest import QTest
+        from PyQt6.QtWidgets import QTimeEdit
+
+        from kde_plasma_stiky_notes.ui import reminder_dialog
+
+        tomorrow = QDate.currentDate().addDays(1)
+
+        def interact(dialog, date_edit, time_edit):
+            date_edit.setDate(tomorrow)
+            time_edit.setSelectedSection(QTimeEdit.Section.HourSection)
+            QTest.keyClicks(time_edit, "07")
+            QTest.keyClick(time_edit, Qt.Key.Key_Right)
+            time_edit.setSelectedSection(QTimeEdit.Section.MinuteSection)
+            QTest.keyClicks(time_edit, "45")
+            return True
+
+        action, when = self._run(interact)
+        assert action == reminder_dialog.SET
+        assert (when.year, when.month, when.day) == (tomorrow.year(), tomorrow.month(), tomorrow.day())
+        assert (when.hour, when.minute) == (7, 45)
+        assert when.tzinfo is not None
+
+    def test_past_time_disables_ok(self):
+        from PyQt6.QtCore import QDate
+        from PyQt6.QtWidgets import QDialogButtonBox, QLabel
+
+        seen = {}
+
+        def interact(dialog, date_edit, time_edit):
+            ok = dialog.findChild(QDialogButtonBox).button(QDialogButtonBox.StandardButton.Ok)
+            warning = [w for w in dialog.findChildren(QLabel) if "passato" in w.text()][0]
+            seen["future"] = (ok.isEnabled(), warning.isHidden())
+            date_edit.setDate(QDate.currentDate().addDays(-1))
+            seen["past"] = (ok.isEnabled(), warning.isHidden())
+            return False
+
+        self._run(interact)
+        assert seen["future"] == (True, True)
+        assert seen["past"] == (False, False)

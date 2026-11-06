@@ -1,3 +1,10 @@
+stiky-notes (0.3.1-1) unstable; urgency=medium
+
+  * Promemoria: l'ora ora si può modificare (data e ora in campi separati;
+    un orario già passato viene segnalato e disattiva OK)
+
+ -- Stiky-notes Developers <dev@stiky-notes.example.com>  Fri, 06 Nov 2026 21:30:00 +0100
+
 stiky-notes (0.3.0-1) unstable; urgency=medium
 
   * Formattazione del testo: grassetto, corsivo, sottolineato, barrato,

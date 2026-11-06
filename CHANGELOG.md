@@ -5,6 +5,14 @@ Tutte le modifiche significative di questo progetto sono documentate in questo f
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/),
 e questo progetto aderisce a [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.3.1] - 2026-11-06
+
+### Corretto
+- Promemoria: non si poteva modificare l'ora. Il limite "non nel passato" era
+  applicato dal campo anche durante la digitazione e rifiutava le cifre
+  intermedie (il "2" di "23"). Ora data e ora sono in due campi separati e un
+  orario già passato viene segnalato e disattiva "OK"
+
 ## [0.3.0] - 2026-11-05
 
 ### Aggiunto
