@@ -21,7 +21,7 @@ import sys
 from typing import Tuple
 
 from PyQt6.QtCore import QObject, QTimer, pyqtSlot
-from PyQt6.QtGui import QCursor, QGuiApplication
+from PyQt6.QtGui import QCursor, QGuiApplication, QIcon, QKeySequence
 from PyQt6.QtQml import QQmlEngine
 from PyQt6.QtWidgets import QApplication, QMenu, QMessageBox
 
@@ -192,6 +192,45 @@ class StikyNotesApp(QObject):
         doc = self.windows.document(note_id)
         if doc is not None and action in text_format.ACTIONS:
             text_format.apply_format(doc, action, start, end, cursor)
+
+    @pyqtSlot(str, bool, bool, bool, bool, bool, result=str)
+    def show_text_menu(self, note_id: str, has_selection: bool, can_paste: bool,
+                       can_undo: bool, can_redo: bool, has_text: bool) -> str:
+        """Menu del clic destro sul testo. Restituisce l'azione scelta ("" se
+        nessuna); la esegue il QML sul TextEdit."""
+        menu = QMenu()
+        actions = {}
+
+        def add(target, key, label, icon, shortcut=None, enabled=True):
+            action = target.addAction(QIcon.fromTheme(icon), label)
+            if shortcut:
+                action.setShortcut(QKeySequence(shortcut))
+            action.setEnabled(enabled)
+            actions[action] = key
+
+        add(menu, "undo", "Annulla", "edit-undo", "Ctrl+Z", can_undo)
+        add(menu, "redo", "Ripeti", "edit-redo", "Ctrl+Shift+Z", can_redo)
+        menu.addSeparator()
+        add(menu, "cut", "Taglia", "edit-cut", "Ctrl+X", has_selection)
+        add(menu, "copy", "Copia", "edit-copy", "Ctrl+C", has_selection)
+        add(menu, "paste", "Incolla", "edit-paste", "Ctrl+V", can_paste)
+        add(menu, "delete", "Elimina", "edit-delete", None, has_selection)
+        menu.addSeparator()
+        add(menu, "selectAll", "Seleziona tutto", "edit-select-all", "Ctrl+A", has_text)
+        menu.addSeparator()
+        fmt = menu.addMenu(QIcon.fromTheme("format-text-bold"), "Formato")
+        add(fmt, "bold", "Grassetto", "format-text-bold", "Ctrl+B")
+        add(fmt, "italic", "Corsivo", "format-text-italic", "Ctrl+I")
+        add(fmt, "underline", "Sottolineato", "format-text-underline", "Ctrl+U")
+        add(fmt, "strike", "Barrato", "format-text-strikethrough")
+        fmt.addSeparator()
+        add(fmt, "bullet", "Elenco puntato", "format-list-unordered")
+        add(fmt, "numbered", "Elenco numerato", "format-list-ordered")
+        fmt.addSeparator()
+        add(fmt, "clear", "Rimuovi formattazione", "edit-clear")
+
+        chosen = menu.exec(QCursor.pos())
+        return actions.get(chosen, "")
 
     # ===== Promemoria =====
 

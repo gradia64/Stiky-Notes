@@ -8,7 +8,7 @@ colorata che resta dove la lasci, anche dopo un riavvio.
 Pacchetto Debian/Ubuntu (generato con `build_deb_simple.py`):
 
 ```bash
-sudo apt install ./stiky-notes_0.3.1-1_all.deb
+sudo apt install ./stiky-notes_0.3.2-1_all.deb
 ```
 
 Oppure da sorgente: `pip install -e .`
@@ -27,6 +27,7 @@ vassoio) e mostra solo le note che avevi lasciato visibili.
 | Azione | Come |
 |---|---|
 | Scrivere | Clic nell'area della nota e digita |
+| Copiare e incollare | Clic destro sul testo: Annulla, Ripeti, Taglia, Copia, Incolla, Elimina, Seleziona tutto, Formato (oppure Ctrl+C / Ctrl+V…) |
 | Spostare | Trascina la barra superiore |
 | Ridimensionare | Trascina l'angolo in basso a destra |
 | Dare un titolo | Doppio clic sulla barra (Invio conferma, Esc annulla) |

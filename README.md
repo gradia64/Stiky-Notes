@@ -12,6 +12,8 @@ Scritta in Python con PyQt6 e Qt Quick (QML).
 - **Titolo** (doppio clic sulla barra) e testo **formattato**: grassetto,
   corsivo, sottolineato, barrato, elenchi puntati e numerati (barra in basso,
   Ctrl+B/I/U)
+- **Menu del testo** con il clic destro: taglia, copia, incolla, annulla,
+  seleziona tutto, formato
 - **Promemoria** con notifica di sistema (⏰ nella barra della nota)
 - **Desktop virtuali**: ogni nota su un desktop scelto o su tutti
 - **Menu della nota** (⋮ o clic destro sulla barra): nuova nota, rinomina,

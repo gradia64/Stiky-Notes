@@ -300,6 +300,59 @@ class TestStikyNotesApp:
         cursor.setPosition(1)
         assert cursor.charFormat().fontWeight() == QFont.Weight.Bold
 
+    def test_text_menu_copy_and_paste(self, stiky_app):
+        """Clic destro sul testo: le voci scelte agiscono sul TextEdit."""
+        from PyQt6.QtCore import Q_ARG, QMetaObject, QObject
+        from PyQt6.QtWidgets import QApplication, QMenu
+
+        note_id = stiky_app.create_new_note()
+        window = stiky_app.windows.get(note_id)
+        body = window.findChild(QObject, "body")
+        body.setProperty("text", "<p>uno due</p>")
+        QMetaObject.invokeMethod(body, "select", Q_ARG(int, 0), Q_ARG(int, 3))
+
+        menus = []
+
+        def choose(label):
+            def fake_exec(menu, *args):
+                entries = {a.text(): a for a in menu.actions()}
+                menus.append({t: a.isEnabled() for t, a in entries.items() if t})
+                return entries[label]
+            return fake_exec
+
+        QApplication.clipboard().clear()
+        with patch.object(QMenu, "exec", choose("Copia")):
+            QMetaObject.invokeMethod(window, "showTextMenu")
+        assert QApplication.clipboard().text() == "uno"
+        assert menus[0]["Copia"] and menus[0]["Taglia"] and menus[0]["Incolla"] is False
+
+        body.setProperty("cursorPosition", body.property("length"))
+        with patch.object(QMenu, "exec", choose("Incolla")):
+            QMetaObject.invokeMethod(window, "showTextMenu")
+        assert body.property("length") == len("uno dueuno")
+        assert menus[1]["Copia"] is False and menus[1]["Incolla"]
+
+    def test_text_menu_format_entry(self, stiky_app):
+        from PyQt6.QtCore import Q_ARG, QMetaObject, QObject
+        from PyQt6.QtGui import QFont, QTextCursor
+        from PyQt6.QtWidgets import QMenu
+
+        note_id = stiky_app.create_new_note()
+        window = stiky_app.windows.get(note_id)
+        body = window.findChild(QObject, "body")
+        body.setProperty("text", "<p>uno due</p>")
+        QMetaObject.invokeMethod(body, "select", Q_ARG(int, 4), Q_ARG(int, 7))
+
+        def fake_exec(menu, *args):
+            fmt = [a for a in menu.actions() if a.text() == "Formato"][0].menu()
+            return [a for a in fmt.actions() if a.text() == "Grassetto"][0]
+
+        with patch.object(QMenu, "exec", fake_exec):
+            QMetaObject.invokeMethod(window, "showTextMenu")
+        cursor = QTextCursor(stiky_app.windows.document(note_id))
+        cursor.setPosition(5)
+        assert cursor.charFormat().fontWeight() == QFont.Weight.Bold
+
     def test_due_reminder_fires(self, stiky_app):
         note_id = stiky_app.create_new_note()
         stiky_app.hide_note(note_id)

@@ -1,3 +1,10 @@
+stiky-notes (0.3.2-1) unstable; urgency=medium
+
+  * Menu del clic destro sul testo della nota: Annulla, Ripeti, Taglia,
+    Copia, Incolla, Elimina, Seleziona tutto e Formato
+
+ -- Stiky-notes Developers <dev@stiky-notes.example.com>  Sat, 07 Nov 2026 12:15:00 +0100
+
 stiky-notes (0.3.1-1) unstable; urgency=medium
 
   * Promemoria: l'ora ora si può modificare (data e ora in campi separati;

@@ -16,7 +16,7 @@ def main():
     project_root = Path(__file__).resolve().parent
 
     with tempfile.TemporaryDirectory(dir="/tmp", prefix="stiky-notes-build-") as tmpdir:
-        pkgdir = Path(tmpdir) / "stiky-notes_0.3.1-1_all"
+        pkgdir = Path(tmpdir) / "stiky-notes_0.3.2-1_all"
 
         dirs = [
             pkgdir / "DEBIAN",
@@ -74,7 +74,7 @@ exec python3 -m kde_plasma_stiky_notes "$@"
                 p.chmod(0o644)
         
         (pkgdir / "DEBIAN" / "control").write_text("""Package: stiky-notes
-Version: 0.3.1-1
+Version: 0.3.2-1
 Section: utils
 Priority: optional
 Architecture: all
@@ -119,11 +119,11 @@ exit 0
         postrm.chmod(0o755)
         
         os.chdir(tmpdir)
-        result = run_cmd(f"dpkg-deb --build --root-owner-group stiky-notes_0.3.1-1_all")
+        result = run_cmd(f"dpkg-deb --build --root-owner-group stiky-notes_0.3.2-1_all")
         
         if result.returncode == 0:
-            generated = Path(tmpdir) / "stiky-notes_0.3.1-1_all.deb"
-            output_deb = project_root / "stiky-notes_0.3.1-1_all.deb"
+            generated = Path(tmpdir) / "stiky-notes_0.3.2-1_all.deb"
+            output_deb = project_root / "stiky-notes_0.3.2-1_all.deb"
             if generated.exists():
                 shutil.move(str(generated), str(output_deb))
                 print(f"✓ Package created: {output_deb}")

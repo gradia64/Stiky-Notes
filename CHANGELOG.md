@@ -5,6 +5,13 @@ Tutte le modifiche significative di questo progetto sono documentate in questo f
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/),
 e questo progetto aderisce a [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.3.2] - 2026-11-07
+
+### Aggiunto
+- Menu del clic destro sul testo della nota: Annulla, Ripeti, Taglia, Copia,
+  Incolla, Elimina, Seleziona tutto e sottomenu Formato. Il clic destro non
+  perde la selezione; fuori dalla selezione sposta il cursore dove si clicca
+
 ## [0.3.1] - 2026-11-06
 
 ### Corretto

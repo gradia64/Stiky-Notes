@@ -79,6 +79,27 @@ Window {
         body.forceActiveFocus();
     }
 
+    // Menu del clic destro sul testo: lo costruisce Python, l'azione scelta
+    // viene eseguita qui sul TextEdit (così Ctrl+Z continua a funzionare)
+    function showTextMenu() {
+        var hasSelection = body.selectionStart !== body.selectionEnd;
+        var action = stikyApp.show_text_menu(noteId, hasSelection, body.canPaste,
+                                             body.canUndo, body.canRedo,
+                                             body.length > 0);
+        body.forceActiveFocus();
+        switch (action) {
+        case "undo": body.undo(); break;
+        case "redo": body.redo(); break;
+        case "cut": body.cut(); break;
+        case "copy": body.copy(); break;
+        case "paste": body.paste(); break;
+        case "delete": body.remove(body.selectionStart, body.selectionEnd); break;
+        case "selectAll": body.selectAll(); break;
+        case "": break;
+        default: note.format(action);
+        }
+    }
+
     Timer {
         id: saveTimer
         interval: 500
@@ -260,6 +281,24 @@ Window {
             persistentSelection: true
             onTextChanged: if (text !== note.savedHtml) saveTimer.restart()
             onCursorRectangleChanged: flick.ensureVisible(cursorRectangle)
+
+            // Clic destro: menu Taglia/Copia/Incolla… (il clic sinistro passa al testo)
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.RightButton
+                cursorShape: Qt.IBeamShape
+                onPressed: function (mouse) {
+                    note.requestActivate();
+                    body.forceActiveFocus();
+                    // Fuori dalla selezione: sposta il cursore dove si è cliccato
+                    var pos = body.positionAt(mouse.x, mouse.y);
+                    var a = Math.min(body.selectionStart, body.selectionEnd);
+                    var b = Math.max(body.selectionStart, body.selectionEnd);
+                    if (a === b || pos < a || pos > b)
+                        body.cursorPosition = pos;
+                }
+                onClicked: note.showTextMenu()
+            }
 
             Text {
                 visible: body.length === 0 && !body.activeFocus
