@@ -1,0 +1,35 @@
+name: Build .deb on tag
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-deb:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build .deb
+        run: python3 build_deb_simple.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: stiky-notes-deb
+          path: stiky-notes_*_all.deb
+
+      - name: Attach to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: stiky-notes_*_all.deb
