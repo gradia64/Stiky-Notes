@@ -8,7 +8,7 @@ colorata che resta dove la lasci, anche dopo un riavvio.
 Pacchetto Debian/Ubuntu (generato con `build_deb_simple.py`):
 
 ```bash
-sudo apt install ./stiky-notes_0.3.2-1_all.deb
+sudo apt install ./stiky-notes_0.3.3-1_all.deb
 ```
 
 Oppure da sorgente: `pip install -e .`

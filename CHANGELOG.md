@@ -5,6 +5,12 @@ Tutte le modifiche significative di questo progetto sono documentate in questo f
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/),
 e questo progetto aderisce a [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.3.3] - 2026-11-08
+
+### Cambiato
+- Licenza del progetto da MIT a GPL-3.0-or-later
+- Aggiunto workflow GitHub Actions per build automatico del .deb su tag v*
+
 ## [0.3.2] - 2026-11-07
 
 ### Aggiunto
