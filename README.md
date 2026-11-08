@@ -95,4 +95,6 @@ QT_QPA_PLATFORM=offscreen python -m pytest
 python3 build_deb_simple.py
 ```
 
-Le note sono salvate in `~/.config/StikyNotes/NoteModel.conf`.
+## Licenza
+
+GPL-3.0-or-later — vedi file [LICENSE](LICENSE).
