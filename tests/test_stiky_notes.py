@@ -295,14 +295,19 @@ class TestStikyNotesApp:
             popup.assert_called_once()
 
     def test_about_shows_version_and_project_link(self, stiky_app):
+        from PyQt6.QtWidgets import QDialog, QLabel
+
         from kde_plasma_stiky_notes import __version__
 
         stiky_app.tray_manager.about_requested.emit()
         box = stiky_app._about_box
         assert box.isVisible() and not box.isModal()
-        assert __version__ in box.text()
-        assert "github.com/gradia64/Stiky-Notes" in box.informativeText()
-        assert "GPL" in box.informativeText()
+        # Non un QMessageBox: il suo dialogo nativo fa crashare l'uscita
+        assert type(box) is QDialog
+        text = box.findChild(QLabel, "aboutText").text()
+        assert __version__ in text
+        assert "github.com/gradia64/Stiky-Notes" in text
+        assert "GPL" in text
         # Riaprirla non crea una seconda finestra
         stiky_app.show_about()
         assert stiky_app._about_box is box

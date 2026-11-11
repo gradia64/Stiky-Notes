@@ -23,7 +23,16 @@ from typing import Tuple
 from PyQt6.QtCore import PYQT_VERSION_STR, QT_VERSION_STR, QObject, QRect, Qt, QTimer, pyqtSlot
 from PyQt6.QtGui import QCursor, QGuiApplication, QIcon, QKeySequence
 from PyQt6.QtQml import QQmlEngine
-from PyQt6.QtWidgets import QApplication, QMenu, QMessageBox
+from PyQt6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QDialogButtonBox,
+    QHBoxLayout,
+    QLabel,
+    QMenu,
+    QMessageBox,
+    QVBoxLayout,
+)
 
 from . import __version__
 from .core import reminders
@@ -192,13 +201,17 @@ class StikyNotesApp(QObject):
     def show_about(self):
         """Finestra con le informazioni sul progetto (dal menu del vassoio)"""
         if self._about_box is None:
-            box = QMessageBox()
+            # Un QDialog semplice e non un QMessageBox: quest'ultimo passa dal
+            # dialogo nativo della piattaforma, che Qt rilascia alla chiusura
+            # dell'applicazione mentre la finestra esiste ancora (crash
+            # all'uscita dopo aver aperto le informazioni).
+            box = QDialog()
             box.setWindowTitle("Informazioni su Stiky-notes")
-            box.setIconPixmap(app_icon().pixmap(64, 64))
-            box.setTextFormat(Qt.TextFormat.RichText)
-            box.setText(f"<h3>Stiky-notes {__version__}</h3>"
-                        "<p>Note adesive (post-it) sul desktop di KDE Plasma.</p>")
-            box.setInformativeText(
+            icon = QLabel()
+            icon.setPixmap(app_icon().pixmap(64, 64))
+            text = QLabel(
+                f"<h3>Stiky-notes {__version__}</h3>"
+                "<p>Note adesive (post-it) sul desktop di KDE Plasma.</p>"
                 f'<p><a href="{PROJECT_URL}">Sito del progetto su GitHub</a><br>'
                 f'<a href="{PROJECT_URL}/issues">Segnala un problema</a></p>'
                 "<p>Software libero distribuito con licenza GNU GPL, versione 3 o "
@@ -206,7 +219,19 @@ class StikyNotesApp(QObject):
                 f"<p>Python {sys.version.split()[0]} · Qt {QT_VERSION_STR} · "
                 f"PyQt {PYQT_VERSION_STR}</p>"
             )
-            box.setStandardButtons(QMessageBox.StandardButton.Close)
+            text.setObjectName("aboutText")
+            text.setTextFormat(Qt.TextFormat.RichText)
+            text.setWordWrap(True)
+            text.setMinimumWidth(320)
+            text.setOpenExternalLinks(True)
+            buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+            buttons.rejected.connect(box.close)
+            row = QHBoxLayout()
+            row.addWidget(icon, 0, Qt.AlignmentFlag.AlignTop)
+            row.addWidget(text, 1)
+            layout = QVBoxLayout(box)
+            layout.addLayout(row)
+            layout.addWidget(buttons)
             # Non modale: le note restano utilizzabili mentre è aperta
             box.setModal(False)
             self._about_box = box
@@ -483,8 +508,6 @@ class StikyNotesApp(QObject):
         self._cleaned_up = True
         self._reminder_timer.stop()
         self._pointer_timer.stop()
-        if self._about_box is not None:
-            self._about_box.close()
 
         # Salva le modifiche digitate negli ultimi istanti
         self.windows.flush_all()

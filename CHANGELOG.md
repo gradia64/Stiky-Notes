@@ -5,6 +5,13 @@ Tutte le modifiche significative di questo progetto sono documentate in questo f
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/),
 e questo progetto aderisce a [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.4.1] - 2026-11-11
+
+### Corretto
+- Crash (errore di segmentazione) uscendo dall'app dopo aver aperto
+  *Informazioni su Stiky-notes*: la finestra non usa più il dialogo nativo
+  della piattaforma
+
 ## [0.4.0] - 2026-11-11
 
 ### Aggiunto
