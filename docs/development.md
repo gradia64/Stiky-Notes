@@ -66,6 +66,24 @@ finestra, la nota riceve per ~0,6 s un titolo temporaneo univoco
 `NoteData.desktop` / `all_desktops` e riapplicata all'avvio e quando una nota
 nascosta viene mostrata.
 
+### Clic sull'icona del vassoio
+
+Il clic sinistro apre un `QMenu` con l'elenco delle note
+(`TrayManager.popup_notes_menu`); il clic destro resta il menu esportato via
+DBusMenu e mostrato da Plasma. Due particolarità di XWayland:
+
+- `QCursor.pos()` non è aggiornato quando il puntatore è sul pannello (una
+  superficie Wayland). `kwin_pointer.request()` esegue uno script KWin che
+  legge `workspace.cursorPos` e risponde chiamando il metodo D-Bus
+  `PointerPosition` di `SingleInstanceService`; se la risposta non arriva
+  entro 400 ms si ripiega su `QCursor.pos()`.
+- Un clic su una finestra Wayland non chiude il menu, perché l'applicazione
+  non lo riceve: l'elenco si chiude con un secondo clic sull'icona o da solo
+  dopo ~4 s senza puntatore sopra (`MENU_IDLE_CHECKS`).
+
+Con Wayland nativo (`STIKY_NOTES_WAYLAND=1`) un menu non si può aprire in un
+punto arbitrario dello schermo: il clic mostra tutte le note, come prima.
+
 ### Icona
 
 Sorgenti in `src/kde_plasma_stiky_notes/icons/` (`stiky-notes.svg` e la

@@ -8,7 +8,7 @@ colorata che resta dove la lasci, anche dopo un riavvio.
 Pacchetto Debian/Ubuntu (generato con `build_deb_simple.py`):
 
 ```bash
-sudo apt install ./stiky-notes_0.3.3-1_all.deb
+sudo apt install ./stiky-notes_0.4.0-1_all.deb
 ```
 
 Oppure da sorgente: `pip install -e .`
@@ -81,12 +81,16 @@ viene ricordata. Richiede KWin (KDE Plasma).
 
 ## Vassoio di sistema
 
-- **Clic**: mostra tutte le note e le porta in primo piano (utile quando sono
-  coperte da altre finestre)
+- **Clic**: elenco delle note; scegline una per portarla in primo piano (anche
+  se era nascosta: le altre restano come sono). In fondo all'elenco: *Nuova
+  nota*, *Mostra tutte le note* e *Nascondi tutte le note*. Un secondo clic
+  sull'icona, Esc o qualche secondo senza il puntatore sopra richiudono
+  l'elenco
 - **Clic centrale**: nuova nota
 - **Clic destro**: menu con *Nuova nota*, *Note* (elenco: clic per richiamarne
   una, anche se nascosta), *Mostra tutte le note*, *Nascondi tutte le note*,
-  *Avvio automatico* ed *Esci*
+  *Avvio automatico*, *Informazioni su Stiky-notes* (versione, sito del
+  progetto, licenza; presente anche in fondo all'elenco del clic) ed *Esci*
 
 Nascondere tutte le note non chiude l'app: per uscire usa *Esci*.
 
@@ -111,8 +115,8 @@ completo; eliminarlo cancella tutte le note.
 **Le note non tornano al loro posto** — verifica di non aver impostato
 `STIKY_NOTES_WAYLAND=1` o `QT_QPA_PLATFORM=wayland`.
 
-**Le note sono coperte dalle altre finestre** — clic sull'icona nel vassoio,
-oppure attiva *Sempre in primo piano* sulle note che vuoi tenere in vista.
+**Le note sono coperte dalle altre finestre** — clic sull'icona nel vassoio e
+scegli la nota (o *Mostra tutte le note*), oppure attiva *Sempre in primo piano* sulle note che vuoi tenere in vista.
 
 **"Un'altra istanza possiede il nome D-Bus ma non risponde"** — un processo
 Stiky-notes è bloccato: terminalo (`pkill -f kde_plasma_stiky_notes`) e riavvia.

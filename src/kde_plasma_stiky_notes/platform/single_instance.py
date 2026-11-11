@@ -3,7 +3,8 @@
 Istanza singola dell'applicazione tramite D-Bus di sessione.
 
 La prima istanza registra il nome ``org.kde.StikyNotes`` sul bus di sessione
-ed esporta un piccolo oggetto con i metodi ``NewNote`` e ``ShowAll``.
+ed esporta un piccolo oggetto con i metodi ``NewNote`` e ``ShowAll``
+(più ``PointerPosition``, con cui KWin risponde a ``kwin_pointer.request``).
 Un secondo avvio (es. le azioni "Nuova nota"/"Mostra tutte le note" del file
 .desktop) non crea un altro processo con un'altra icona nel vassoio e un
 modello dati concorrente: inoltra la richiesta all'istanza già attiva ed esce.
@@ -28,6 +29,8 @@ class SingleInstanceService(QObject):
 
     new_note_requested = pyqtSignal()
     show_all_requested = pyqtSignal()
+    # x, y del puntatore e geometria del desktop, nelle coordinate di KWin
+    pointer_reported = pyqtSignal(int, int, int, int, int, int)
 
     def __init__(self, parent: Optional[QObject] = None):
         super().__init__(parent)
@@ -63,6 +66,11 @@ class SingleInstanceService(QObject):
     @pyqtSlot()
     def ShowAll(self):
         self.show_all_requested.emit()
+
+    @pyqtSlot(int, int, int, int, int, int)
+    def PointerPosition(self, x: int, y: int, area_x: int, area_y: int,
+                        area_width: int, area_height: int):
+        self.pointer_reported.emit(x, y, area_x, area_y, area_width, area_height)
 
 
 def forward_to_running_instance(method: str) -> bool:

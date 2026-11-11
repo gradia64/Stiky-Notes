@@ -20,8 +20,8 @@ Scritta in Python con PyQt6 e Qt Quick (QML).
   12 colori, sempre in primo piano, desktop, promemoria, nascondi, elimina
 - **Salvataggio automatico** di testo, titolo, posizione e dimensioni: al
   riavvio ogni nota riappare dov'era
-- **Vassoio di sistema**: clic per richiamare tutte le note in primo piano,
-  clic centrale per una nuova nota, menu con l'elenco delle note
+- **Vassoio di sistema**: clic per l'elenco delle note e richiamare solo
+  quella che serve, clic centrale per una nuova nota, clic destro per il menu
 - **Avvio automatico** al login (disattivabile dal vassoio)
 - **Istanza singola**: rilanciare l'app (anche con `--new`) agisce sull'istanza
   già aperta tramite D-Bus

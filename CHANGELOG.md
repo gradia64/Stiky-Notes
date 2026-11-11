@@ -5,6 +5,19 @@ Tutte le modifiche significative di questo progetto sono documentate in questo f
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/),
 e questo progetto aderisce a [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.4.0] - 2026-11-11
+
+### Aggiunto
+- Voce *Informazioni su Stiky-notes* nei menu del vassoio: versione, sito del
+  progetto, segnalazioni, licenza e versioni di Python/Qt
+
+### Cambiato
+- Clic sull'icona del vassoio: apre l'elenco delle note, da cui richiamare
+  solo quella che serve, invece di mostrarle tutte (comprese quelle nascoste).
+  *Mostra tutte le note* resta in fondo all'elenco e nel menu del clic destro.
+  Su Plasma Wayland la posizione dell'icona viene chiesta a KWin, perché sotto
+  XWayland l'applicazione non vede il puntatore quando è sul pannello
+
 ## [0.3.3] - 2026-11-08
 
 ### Cambiato

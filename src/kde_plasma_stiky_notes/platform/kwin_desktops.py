@@ -81,23 +81,20 @@ def desktop_names() -> List[str]:
         return []
 
 
-def apply(requests: Sequence[DesktopRequest]) -> bool:
-    """Esegue uno script KWin che sposta le finestre indicate. True se eseguito."""
-    if not requests:
-        return True
+def run_script(source: str, name: str = SCRIPT_NAME) -> bool:
+    """Carica ed esegue uno script KWin. True se è stato eseguito."""
     bus = _bus()
     scripting = QDBusInterface(KWIN_SERVICE, "/Scripting", "org.kde.kwin.Scripting", bus)
     if not scripting.isValid():
         return False
 
-    payload = json.dumps([{"token": t, "all": a, "index": i} for t, a, i in requests])
     fd, path = tempfile.mkstemp(prefix="stiky-notes-", suffix=".js")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(_SCRIPT % payload)
+            f.write(source)
         # Uno script rimasto caricato (es. dopo un crash) impedirebbe il caricamento
-        scripting.call("unloadScript", SCRIPT_NAME)
-        reply = scripting.call("loadScript", path, SCRIPT_NAME)
+        scripting.call("unloadScript", name)
+        reply = scripting.call("loadScript", path, name)
         if reply.type() == QDBusMessage.MessageType.ErrorMessage or not reply.arguments():
             return False
         script_id = reply.arguments()[0]
@@ -106,7 +103,15 @@ def apply(requests: Sequence[DesktopRequest]) -> bool:
         script = QDBusInterface(KWIN_SERVICE, f"/Scripting/Script{script_id}",
                                 "org.kde.kwin.Script", bus)
         ok = script.call("run").type() != QDBusMessage.MessageType.ErrorMessage
-        scripting.call("unloadScript", SCRIPT_NAME)
+        scripting.call("unloadScript", name)
         return ok
     finally:
         os.unlink(path)
+
+
+def apply(requests: Sequence[DesktopRequest]) -> bool:
+    """Esegue uno script KWin che sposta le finestre indicate. True se eseguito."""
+    if not requests:
+        return True
+    payload = json.dumps([{"token": t, "all": a, "index": i} for t, a, i in requests])
+    return run_script(_SCRIPT % payload)

@@ -20,7 +20,7 @@ import os
 import sys
 from typing import Tuple
 
-from PyQt6.QtCore import QObject, QTimer, pyqtSlot
+from PyQt6.QtCore import PYQT_VERSION_STR, QT_VERSION_STR, QObject, QRect, Qt, QTimer, pyqtSlot
 from PyQt6.QtGui import QCursor, QGuiApplication, QIcon, QKeySequence
 from PyQt6.QtQml import QQmlEngine
 from PyQt6.QtWidgets import QApplication, QMenu, QMessageBox
@@ -29,7 +29,7 @@ from . import __version__
 from .core import reminders
 from .core.note_controller import COLORS, NoteController
 from .core.note_model import NoteModel
-from .platform import kwin_desktops
+from .platform import kwin_desktops, kwin_pointer
 from .platform.single_instance import SingleInstanceService, forward_to_running_instance
 from .ui import reminder_dialog, text_format
 from .ui.note_windows import NoteWindowManager
@@ -40,6 +40,9 @@ CASCADE_STEPS = 8
 REMINDER_CHECK_MS = 15_000
 # Attesa perché KWin veda il titolo temporaneo della finestra (e poi lo script)
 KWIN_CAPTION_DELAY_MS = 300
+PROJECT_URL = "https://github.com/gradia64/Stiky-Notes"
+# Attesa massima della posizione del puntatore chiesta a KWin
+KWIN_POINTER_TIMEOUT_MS = 400
 
 
 class StikyNotesApp(QObject):
@@ -67,12 +70,23 @@ class StikyNotesApp(QObject):
         self.tray_manager.show_all_requested.connect(self.show_all_notes)
         self.tray_manager.hide_all_requested.connect(self.hide_all_notes)
         self.tray_manager.note_activated.connect(self.show_note)
+        self.tray_manager.notes_menu_requested.connect(self.show_tray_menu)
+        self.tray_manager.about_requested.connect(self.show_about)
+        self._about_box = None
         self.tray_manager.message_clicked.connect(self._on_notification_clicked)
 
         self._last_reminder_note = ""
         self._reminder_timer = QTimer(self)
         self._reminder_timer.setInterval(REMINDER_CHECK_MS)
         self._reminder_timer.timeout.connect(self.check_reminders)
+
+        # Scatta se KWin non comunica la posizione del puntatore
+        self._pointer_timer = QTimer(self)
+        self._pointer_timer.setSingleShot(True)
+        self._pointer_timer.setInterval(KWIN_POINTER_TIMEOUT_MS)
+        self._pointer_timer.timeout.connect(
+            lambda: self.tray_manager.popup_notes_menu(QCursor.pos())
+        )
 
     # ===== Avvio =====
 
@@ -151,6 +165,54 @@ class StikyNotesApp(QObject):
         self.windows.show(note_id, focus=True)
         if was_hidden:
             self.apply_desktops([note_id])
+
+    def show_tray_menu(self):
+        """Clic sull'icona del vassoio: elenco delle note accanto al puntatore"""
+        if not self._can_position:
+            # Wayland nativo: un menu non si può aprire in un punto dello
+            # schermo senza una finestra a cui agganciarlo
+            self.show_all_notes()
+            return
+        # Sotto XWayland Qt non vede il puntatore quando è sul pannello
+        if os.environ.get("XDG_SESSION_TYPE") == "wayland" and kwin_pointer.request():
+            self._pointer_timer.start()
+        else:
+            self.tray_manager.popup_notes_menu(QCursor.pos())
+
+    def on_pointer_reported(self, x: int, y: int, area_x: int, area_y: int,
+                            area_width: int, area_height: int):
+        """Risposta di KWin a ``show_tray_menu``"""
+        if not self._pointer_timer.isActive():
+            return
+        self._pointer_timer.stop()
+        local_area = QGuiApplication.primaryScreen().virtualGeometry()
+        kwin_area = QRect(area_x, area_y, area_width, area_height)
+        self.tray_manager.popup_notes_menu(kwin_pointer.to_local(x, y, kwin_area, local_area))
+
+    def show_about(self):
+        """Finestra con le informazioni sul progetto (dal menu del vassoio)"""
+        if self._about_box is None:
+            box = QMessageBox()
+            box.setWindowTitle("Informazioni su Stiky-notes")
+            box.setIconPixmap(app_icon().pixmap(64, 64))
+            box.setTextFormat(Qt.TextFormat.RichText)
+            box.setText(f"<h3>Stiky-notes {__version__}</h3>"
+                        "<p>Note adesive (post-it) sul desktop di KDE Plasma.</p>")
+            box.setInformativeText(
+                f'<p><a href="{PROJECT_URL}">Sito del progetto su GitHub</a><br>'
+                f'<a href="{PROJECT_URL}/issues">Segnala un problema</a></p>'
+                "<p>Software libero distribuito con licenza GNU GPL, versione 3 o "
+                "successiva, senza alcuna garanzia.</p>"
+                f"<p>Python {sys.version.split()[0]} · Qt {QT_VERSION_STR} · "
+                f"PyQt {PYQT_VERSION_STR}</p>"
+            )
+            box.setStandardButtons(QMessageBox.StandardButton.Close)
+            # Non modale: le note restano utilizzabili mentre è aperta
+            box.setModal(False)
+            self._about_box = box
+        self._about_box.show()
+        self._about_box.raise_()
+        self._about_box.activateWindow()
 
     def show_all_notes(self):
         reopened = []
@@ -420,6 +482,9 @@ class StikyNotesApp(QObject):
             return
         self._cleaned_up = True
         self._reminder_timer.stop()
+        self._pointer_timer.stop()
+        if self._about_box is not None:
+            self._about_box.close()
 
         # Salva le modifiche digitate negli ultimi istanti
         self.windows.flush_all()
@@ -508,6 +573,7 @@ def main():
 
     single_instance.new_note_requested.connect(stiky_app.create_new_note)
     single_instance.show_all_requested.connect(stiky_app.show_all_notes)
+    single_instance.pointer_reported.connect(stiky_app.on_pointer_reported)
 
     stiky_app.open_saved_notes()
     if args.new:

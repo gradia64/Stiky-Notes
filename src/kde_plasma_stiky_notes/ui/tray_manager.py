@@ -2,18 +2,20 @@
 """
 Icona di Stiky-notes nell'area di notifica (system tray).
 
-- Clic: mostra tutte le note in primo piano
+- Clic: elenco delle note, per richiamarne una (più nuova nota e
+  mostra/nascondi tutte)
 - Clic centrale: nuova nota
-- Menu: nuova nota, elenco delle note, mostra/nascondi tutte, avvio
-  automatico, esci
+- Clic destro: nuova nota, elenco delle note, mostra/nascondi tutte, avvio
+  automatico, informazioni, esci
 """
 
+import os
 import sys
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from PyQt6.QtCore import QObject, QSize, Qt, pyqtSignal
-from PyQt6.QtGui import QAction, QColor, QIcon, QPainter, QPixmap
+from PyQt6.QtCore import QObject, QPoint, QSize, Qt, QTimer, pyqtSignal
+from PyQt6.QtGui import QAction, QColor, QGuiApplication, QIcon, QPainter, QPixmap
 from PyQt6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from ..platform import autostart
@@ -30,6 +32,12 @@ def app_icon() -> QIcon:
     for size in (32, 48, 64, 128, 256):
         bundled.addFile(str(ICON_DIR / "stiky-notes.svg"), QSize(size, size))
     return QIcon.fromTheme("stiky-notes", bundled)
+
+# Sotto XWayland un clic su una finestra Wayland non chiude il menu del clic
+# sinistro (l'applicazione non lo vede): il menu si chiude da solo se il
+# puntatore non ci sta sopra per questo tempo.
+MENU_CHECK_MS = 500
+MENU_IDLE_CHECKS = 8
 
 # (id, etichetta, colore) di ogni nota mostrata nel menu
 NoteEntry = Tuple[str, str, str]
@@ -58,6 +66,8 @@ class TrayManager(QObject):
     show_all_requested = pyqtSignal()
     hide_all_requested = pyqtSignal()
     note_activated = pyqtSignal(str)
+    notes_menu_requested = pyqtSignal()
+    about_requested = pyqtSignal()
     message_clicked = pyqtSignal()
 
     def __init__(self, parent: Optional[QObject] = None):
@@ -72,6 +82,14 @@ class TrayManager(QObject):
         self._menu = QMenu()
         self._notes_menu = QMenu("Note")
         self._build_menu()
+
+        # Menu del clic sinistro, ricreato a ogni apertura
+        self._click_menu = QMenu()
+        self._idle_checks = 0
+        self._menu_watchdog = QTimer(self)
+        self._menu_watchdog.setInterval(MENU_CHECK_MS)
+        self._menu_watchdog.timeout.connect(self._check_click_menu)
+        self._click_menu.aboutToHide.connect(self._menu_watchdog.stop)
 
     def _build_menu(self):
         """Crea il menu contestuale dell'icona"""
@@ -101,6 +119,11 @@ class TrayManager(QObject):
 
         self._menu.addSeparator()
 
+        about_action = QAction(
+            QIcon.fromTheme("help-about"), "Informazioni su Stiky-notes", self)
+        about_action.triggered.connect(self.about_requested.emit)
+        self._menu.addAction(about_action)
+
         exit_action = QAction("Esci", self)
         exit_action.triggered.connect(QApplication.quit)
         self._menu.addAction(exit_action)
@@ -120,15 +143,64 @@ class TrayManager(QObject):
 
     def _rebuild_notes_menu(self):
         self._notes_menu.clear()
+        self._add_note_actions(self._notes_menu)
+
+    def _add_note_actions(self, menu: QMenu):
+        """Una voce per nota: sceglierla la richiama in primo piano"""
         if not self._notes:
-            empty = self._notes_menu.addAction("Nessuna nota")
+            empty = menu.addAction("Nessuna nota")
             empty.setEnabled(False)
             return
         for note_id, label, color in self._notes:
-            action = self._notes_menu.addAction(color_icon(color, square=True), label)
+            action = menu.addAction(color_icon(color, square=True), label)
             action.triggered.connect(
                 lambda _checked=False, nid=note_id: self.note_activated.emit(nid)
             )
+
+    def popup_notes_menu(self, pointer: QPoint):
+        """Apre accanto al puntatore l'elenco delle note (clic sull'icona)"""
+        menu = self._click_menu
+        menu.clear()
+        self._add_note_actions(menu)
+        menu.addSeparator()
+        menu.addAction("Nuova nota").triggered.connect(self.new_note_requested.emit)
+        if self._notes:
+            menu.addAction("Mostra tutte le note").triggered.connect(
+                self.show_all_requested.emit)
+            menu.addAction("Nascondi tutte le note").triggered.connect(
+                self.hide_all_requested.emit)
+        menu.addSeparator()
+        menu.addAction(QIcon.fromTheme("help-about"), "Informazioni su Stiky-notes"
+                       ).triggered.connect(self.about_requested.emit)
+
+        menu.popup(self._menu_position(pointer, menu.sizeHint()))
+        if os.environ.get("XDG_SESSION_TYPE") == "wayland":
+            self._idle_checks = 0
+            self._menu_watchdog.start()
+
+    @staticmethod
+    def _menu_position(pointer: QPoint, size: QSize) -> QPoint:
+        """Angolo del menu: sopra il puntatore se il vassoio è in basso,
+        sotto se è in alto, sempre dentro lo schermo."""
+        screen = QGuiApplication.screenAt(pointer) or QGuiApplication.primaryScreen()
+        area = screen.geometry()
+        x = pointer.x() - size.width() // 2
+        x = max(area.left(), min(x, area.right() - size.width()))
+        if pointer.y() > area.center().y():
+            y = pointer.y() - size.height()
+        else:
+            y = pointer.y()
+        y = max(area.top(), min(y, area.bottom() - size.height()))
+        return QPoint(x, y)
+
+    def _check_click_menu(self):
+        """Chiude il menu del clic sinistro rimasto aperto senza puntatore sopra"""
+        if self._click_menu.underMouse():
+            self._idle_checks = 0
+            return
+        self._idle_checks += 1
+        if self._idle_checks >= MENU_IDLE_CHECKS:
+            self._click_menu.close()
 
     def _on_tray_icon_activated(self, reason):
         """Clic sull'icona.
@@ -142,7 +214,11 @@ class TrayManager(QObject):
             QSystemTrayIcon.ActivationReason.Trigger,
             QSystemTrayIcon.ActivationReason.DoubleClick,
         ):
-            self.show_all_requested.emit()
+            # Un secondo clic sull'icona richiude l'elenco
+            if self._click_menu.isVisible():
+                self._click_menu.close()
+            else:
+                self.notes_menu_requested.emit()
         elif reason == QSystemTrayIcon.ActivationReason.MiddleClick:
             self.new_note_requested.emit()
 
@@ -163,4 +239,5 @@ class TrayManager(QObject):
 
     def cleanup(self):
         """Nasconde l'icona in fase di chiusura"""
+        self._click_menu.close()
         self._tray_icon.hide()

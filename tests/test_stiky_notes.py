@@ -242,6 +242,71 @@ class TestStikyNotesApp:
         assert window.property("keepAbove") is True
         assert stiky_app.tray_manager._notes == [(note_id, "Latte", "#4A90E2")]
 
+    def test_tray_click_lists_notes_instead_of_showing_all(self, stiky_app):
+        """Clic sull'icona: elenco delle note, quelle nascoste restano nascoste."""
+        from PyQt6.QtCore import QPoint
+        from PyQt6.QtWidgets import QSystemTrayIcon
+
+        first = stiky_app.create_new_note()
+        second = stiky_app.create_new_note()
+        stiky_app.update_note_content(second, "Spesa", "<p>Spesa</p>")
+        stiky_app.hide_all_notes()
+
+        tray = stiky_app.tray_manager
+        with patch("kde_plasma_stiky_notes.main.kwin_pointer") as pointer, \
+                patch("kde_plasma_stiky_notes.main.QCursor") as cursor:
+            pointer.request.return_value = False
+            cursor.pos.return_value = QPoint(40, 40)
+            tray._on_tray_icon_activated(QSystemTrayIcon.ActivationReason.Trigger)
+
+        assert tray._click_menu.isVisible()
+        assert not stiky_app.windows.get(first).isVisible()
+        assert not stiky_app.windows.get(second).isVisible()
+        labels = [a.text() for a in tray._click_menu.actions() if not a.isSeparator()]
+        assert labels == ["Nota vuota", "Spesa", "Nuova nota",
+                          "Mostra tutte le note", "Nascondi tutte le note",
+                          "Informazioni su Stiky-notes"]
+
+        # Scegliere una nota richiama solo quella
+        tray._click_menu.actions()[1].trigger()
+        assert stiky_app.windows.get(second).isVisible()
+        assert not stiky_app.windows.get(first).isVisible()
+
+        # Un secondo clic sull'icona richiude l'elenco
+        tray._on_tray_icon_activated(QSystemTrayIcon.ActivationReason.Trigger)
+        assert not tray._click_menu.isVisible()
+
+    def test_tray_menu_opens_where_kwin_reports_the_pointer(self, stiky_app):
+        from PyQt6.QtCore import QPoint
+        from PyQt6.QtGui import QGuiApplication
+
+        area = QGuiApplication.primaryScreen().virtualGeometry()
+        with patch("kde_plasma_stiky_notes.main.kwin_pointer.request", return_value=True), \
+                patch.dict(os.environ, {"XDG_SESSION_TYPE": "wayland"}), \
+                patch.object(stiky_app.tray_manager, "popup_notes_menu") as popup:
+            stiky_app.show_tray_menu()
+            popup.assert_not_called()
+            # KWin vede lo stesso desktop a scala doppia
+            stiky_app.on_pointer_reported(
+                200, 100, 0, 0, area.width() * 2, area.height() * 2)
+            popup.assert_called_once_with(QPoint(100, 50))
+            # Una risposta non attesa viene ignorata
+            stiky_app.on_pointer_reported(1, 1, 0, 0, 10, 10)
+            popup.assert_called_once()
+
+    def test_about_shows_version_and_project_link(self, stiky_app):
+        from kde_plasma_stiky_notes import __version__
+
+        stiky_app.tray_manager.about_requested.emit()
+        box = stiky_app._about_box
+        assert box.isVisible() and not box.isModal()
+        assert __version__ in box.text()
+        assert "github.com/gradia64/Stiky-Notes" in box.informativeText()
+        assert "GPL" in box.informativeText()
+        # Riaprirla non crea una seconda finestra
+        stiky_app.show_about()
+        assert stiky_app._about_box is box
+
     def test_geometry_is_saved(self, stiky_app):
         note_id = stiky_app.create_new_note()
         stiky_app.update_note_geometry(note_id, 100, 120, 300, 280)
