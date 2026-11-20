@@ -33,6 +33,7 @@ def app_icon() -> QIcon:
         bundled.addFile(str(ICON_DIR / "stiky-notes.svg"), QSize(size, size))
     return QIcon.fromTheme("stiky-notes", bundled)
 
+
 # Sotto XWayland un clic su una finestra Wayland non chiude il menu del clic
 # sinistro (l'applicazione non lo vede): il menu si chiude da solo se il
 # puntatore non ci sta sopra per questo tempo.
@@ -120,7 +121,8 @@ class TrayManager(QObject):
         self._menu.addSeparator()
 
         about_action = QAction(
-            QIcon.fromTheme("help-about"), "Informazioni su Stiky-notes", self)
+            QIcon.fromTheme("help-about"), "Informazioni su Stiky-notes", self
+        )
         about_action.triggered.connect(self.about_requested.emit)
         self._menu.addAction(about_action)
 
@@ -134,7 +136,7 @@ class TrayManager(QObject):
         # nativamente al click destro; su X11 lo mostra Qt stesso.
         self._tray_icon.setContextMenu(self._menu)
 
-    def set_notes(self, notes: List[NoteEntry]):
+    def set_notes(self, notes: List[NoteEntry]) -> None:
         """Aggiorna l'elenco delle note nel menu (solo se è cambiato)"""
         if notes == self._notes:
             return
@@ -145,33 +147,42 @@ class TrayManager(QObject):
         self._notes_menu.clear()
         self._add_note_actions(self._notes_menu)
 
-    def _add_note_actions(self, menu: QMenu):
+    def _add_note_actions(self, menu: QMenu) -> None:
         """Una voce per nota: sceglierla la richiama in primo piano"""
         if not self._notes:
             empty = menu.addAction("Nessuna nota")
+            assert empty is not None
             empty.setEnabled(False)
             return
         for note_id, label, color in self._notes:
             action = menu.addAction(color_icon(color, square=True), label)
+            assert action is not None
             action.triggered.connect(
                 lambda _checked=False, nid=note_id: self.note_activated.emit(nid)
             )
 
-    def popup_notes_menu(self, pointer: QPoint):
+    def popup_notes_menu(self, pointer: QPoint) -> None:
         """Apre accanto al puntatore l'elenco delle note (clic sull'icona)"""
         menu = self._click_menu
         menu.clear()
         self._add_note_actions(menu)
         menu.addSeparator()
-        menu.addAction("Nuova nota").triggered.connect(self.new_note_requested.emit)
+        new_action = menu.addAction("Nuova nota")
+        assert new_action is not None
+        new_action.triggered.connect(self.new_note_requested.emit)
         if self._notes:
-            menu.addAction("Mostra tutte le note").triggered.connect(
-                self.show_all_requested.emit)
-            menu.addAction("Nascondi tutte le note").triggered.connect(
-                self.hide_all_requested.emit)
+            show_all_action = menu.addAction("Mostra tutte le note")
+            assert show_all_action is not None
+            show_all_action.triggered.connect(self.show_all_requested.emit)
+            hide_all_action = menu.addAction("Nascondi tutte le note")
+            assert hide_all_action is not None
+            hide_all_action.triggered.connect(self.hide_all_requested.emit)
         menu.addSeparator()
-        menu.addAction(QIcon.fromTheme("help-about"), "Informazioni su Stiky-notes"
-                       ).triggered.connect(self.about_requested.emit)
+        info_action = menu.addAction(
+            QIcon.fromTheme("help-about"), "Informazioni su Stiky-notes"
+        )
+        assert info_action is not None
+        info_action.triggered.connect(self.about_requested.emit)
 
         menu.popup(self._menu_position(pointer, menu.sizeHint()))
         if os.environ.get("XDG_SESSION_TYPE") == "wayland":
@@ -183,6 +194,7 @@ class TrayManager(QObject):
         """Angolo del menu: sopra il puntatore se il vassoio è in basso,
         sotto se è in alto, sempre dentro lo schermo."""
         screen = QGuiApplication.screenAt(pointer) or QGuiApplication.primaryScreen()
+        assert screen is not None
         area = screen.geometry()
         x = pointer.x() - size.width() // 2
         x = max(area.left(), min(x, area.right() - size.width()))
@@ -222,12 +234,15 @@ class TrayManager(QObject):
         elif reason == QSystemTrayIcon.ActivationReason.MiddleClick:
             self.new_note_requested.emit()
 
-    def _on_startup_toggled(self, enabled: bool):
+    def _on_startup_toggled(self, enabled: bool) -> None:
         """Attiva/disattiva l'avvio automatico (file XDG autostart)"""
         if not autostart.set_enabled(enabled):
-            print("[TrayManager] Impossibile modificare l'avvio automatico", file=sys.stderr)
+            print(
+                "[TrayManager] Impossibile modificare l'avvio automatico",
+                file=sys.stderr,
+            )
 
-    def notify(self, title: str, message: str):
+    def notify(self, title: str, message: str) -> None:
         """Notifica di sistema (su Plasma passa dal servizio delle notifiche)"""
         self._tray_icon.showMessage(
             title, message, QSystemTrayIcon.MessageIcon.Information, 0

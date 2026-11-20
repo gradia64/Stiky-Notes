@@ -23,7 +23,7 @@ OUT = ROOT / "debian" / "icons"
 SIZES = (16, 22, 24, 32, 48, 64, 128, 256)
 
 
-def render(svg: Path, size: int, dest: Path):
+def render(svg: Path, size: int, dest: Path) -> None:
     renderer = QSvgRenderer(str(svg))
     if not renderer.isValid():
         sys.exit(f"SVG non valido: {svg}")

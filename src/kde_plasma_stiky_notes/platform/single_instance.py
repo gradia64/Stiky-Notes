@@ -23,8 +23,10 @@ DBUS_PATH = "/org/kde/StikyNotes"
 DBUS_INTERFACE = "org.kde.StikyNotes"
 
 
-@pyqtClassInfo("D-Bus Interface", DBUS_INTERFACE)
-class SingleInstanceService(QObject):
+# PyQt6 stubs type pyqtClassInfo as returning None; at runtime it is a
+# valid class decorator.
+@pyqtClassInfo("D-Bus Interface", DBUS_INTERFACE)  # type: ignore[func-returns-value]
+class SingleInstanceService(QObject):  # type: ignore[misc]
     """Oggetto esportato su D-Bus dall'istanza principale."""
 
     new_note_requested = pyqtSignal()
@@ -68,8 +70,15 @@ class SingleInstanceService(QObject):
         self.show_all_requested.emit()
 
     @pyqtSlot(int, int, int, int, int, int)
-    def PointerPosition(self, x: int, y: int, area_x: int, area_y: int,
-                        area_width: int, area_height: int):
+    def PointerPosition(
+        self,
+        x: int,
+        y: int,
+        area_x: int,
+        area_y: int,
+        area_width: int,
+        area_height: int,
+    ) -> None:
         self.pointer_reported.emit(x, y, area_x, area_y, area_width, area_height)
 
 

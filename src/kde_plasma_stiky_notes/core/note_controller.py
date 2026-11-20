@@ -4,7 +4,7 @@ Controller delle note: esegue le operazioni sul modello e notifica
 l'interfaccia tramite segnali.
 """
 
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
@@ -39,14 +39,20 @@ class NoteController(QObject):
         super().__init__()
         self.model = model
 
-    def create_note(self, title: str = "", content: str = "", x: int = 0, y: int = 0,
-                    color: str = COLOR_PALETTE[0]) -> Optional[str]:
+    def create_note(
+        self,
+        title: str = "",
+        content: str = "",
+        x: int = 0,
+        y: int = 0,
+        color: str = COLOR_PALETTE[0],
+    ) -> Optional[str]:
         """Crea una nuova nota e ne restituisce l'ID"""
         note = self.model.add_note(title, content, x, y, color)
         self.note_created.emit(note.to_dict())
         return note.id
 
-    def update_note(self, note_id: str, **kwargs) -> bool:
+    def update_note(self, note_id: str, **kwargs: Any) -> bool:
         """Aggiorna i campi indicati di una nota"""
         if not self.model.update_note(note_id, **kwargs):
             return False

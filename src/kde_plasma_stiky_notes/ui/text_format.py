@@ -8,7 +8,13 @@ restano annullabili con Ctrl+Z e il TextEdit si aggiorna da solo.
 
 import html
 
-from PyQt6.QtGui import QFont, QTextCharFormat, QTextCursor, QTextDocument, QTextListFormat
+from PyQt6.QtGui import (
+    QFont,
+    QTextCharFormat,
+    QTextCursor,
+    QTextDocument,
+    QTextListFormat,
+)
 
 ACTIONS = ("bold", "italic", "underline", "strike", "bullet", "numbered", "clear")
 
@@ -22,11 +28,15 @@ def plain_to_html(text: str) -> str:
     """Converte testo semplice (note delle versioni precedenti) in HTML"""
     if not text:
         return ""
-    lines = "".join(f"<p>{html.escape(line) or '<br />'}</p>" for line in text.split("\n"))
+    lines = "".join(
+        f"<p>{html.escape(line) or '<br />'}</p>" for line in text.split("\n")
+    )
     return f"<html><body>{lines}</body></html>"
 
 
-def _selection(doc: QTextDocument, start: int, end: int, cursor_pos: int) -> QTextCursor:
+def _selection(
+    doc: QTextDocument, start: int, end: int, cursor_pos: int
+) -> QTextCursor:
     cursor = QTextCursor(doc)
     if start != end:
         cursor.setPosition(min(start, end))
@@ -36,7 +46,7 @@ def _selection(doc: QTextDocument, start: int, end: int, cursor_pos: int) -> QTe
     return cursor
 
 
-def _toggle_char_format(cursor: QTextCursor, action: str):
+def _toggle_char_format(cursor: QTextCursor, action: str) -> None:
     if not cursor.hasSelection():
         # Senza selezione si formatta la parola sotto il cursore
         cursor.select(QTextCursor.SelectionType.WordUnderCursor)
@@ -60,13 +70,14 @@ def _toggle_char_format(cursor: QTextCursor, action: str):
     cursor.mergeCharFormat(fmt)
 
 
-def _toggle_list(cursor: QTextCursor, action: str):
+def _toggle_list(cursor: QTextCursor, action: str) -> None:
     style = _LIST_STYLES[action]
     current = cursor.currentList()
     cursor.beginEditBlock()
     if current is not None and current.format().style() == style:
         # Stesso tipo di elenco: lo toglie dai paragrafi selezionati
         doc = cursor.document()
+        assert doc is not None
         block = doc.findBlock(cursor.selectionStart())
         last = doc.findBlock(cursor.selectionEnd())
         while block.isValid():
@@ -90,7 +101,7 @@ def _toggle_list(cursor: QTextCursor, action: str):
     cursor.endEditBlock()
 
 
-def _clear(cursor: QTextCursor):
+def _clear(cursor: QTextCursor) -> None:
     if not cursor.hasSelection():
         cursor.select(QTextCursor.SelectionType.BlockUnderCursor)
     fmt = QTextCharFormat()
@@ -101,7 +112,9 @@ def _clear(cursor: QTextCursor):
     cursor.mergeCharFormat(fmt)
 
 
-def apply_format(doc: QTextDocument, action: str, start: int, end: int, cursor_pos: int):
+def apply_format(
+    doc: QTextDocument, action: str, start: int, end: int, cursor_pos: int
+) -> None:
     """Applica ``action`` (vedi ACTIONS) alla selezione [start, end) del documento"""
     if action not in ACTIONS:
         raise ValueError(f"Formattazione sconosciuta: {action}")

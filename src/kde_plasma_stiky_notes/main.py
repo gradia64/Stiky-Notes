@@ -18,10 +18,18 @@ Se un'istanza è già attiva, la richiesta le viene inoltrata.
 import argparse
 import os
 import sys
-from typing import Tuple
+from typing import Optional, Tuple
 
-from PyQt6.QtCore import PYQT_VERSION_STR, QT_VERSION_STR, QObject, QRect, Qt, QTimer, pyqtSlot
-from PyQt6.QtGui import QCursor, QGuiApplication, QIcon, QKeySequence
+from PyQt6.QtCore import (
+    PYQT_VERSION_STR,
+    QT_VERSION_STR,
+    QObject,
+    QRect,
+    Qt,
+    QTimer,
+    pyqtSlot,
+)
+from PyQt6.QtGui import QAction, QCursor, QGuiApplication, QIcon, QKeySequence
 from PyQt6.QtQml import QQmlEngine
 from PyQt6.QtWidgets import (
     QApplication,
@@ -68,7 +76,9 @@ class StikyNotesApp(QObject):
         # delle proprie finestre: in quel caso si salvano solo le dimensioni.
         self._can_position = QGuiApplication.platformName() != "wayland"
 
-        engine.rootContext().setContextProperty("stikyApp", self)
+        root_context = engine.rootContext()
+        assert root_context is not None
+        root_context.setContextProperty("stikyApp", self)
         self.windows = NoteWindowManager(engine, self)
 
         self.note_controller.note_created.connect(self._on_note_created)
@@ -81,7 +91,7 @@ class StikyNotesApp(QObject):
         self.tray_manager.note_activated.connect(self.show_note)
         self.tray_manager.notes_menu_requested.connect(self.show_tray_menu)
         self.tray_manager.about_requested.connect(self.show_about)
-        self._about_box = None
+        self._about_box: Optional[QDialog] = None
         self.tray_manager.message_clicked.connect(self._on_notification_clicked)
 
         self._last_reminder_note = ""
@@ -120,42 +130,52 @@ class StikyNotesApp(QObject):
 
     # ===== Aggiornamenti dal controller =====
 
-    def _on_note_created(self, data: dict):
+    def _on_note_created(self, data: dict) -> None:
         note = self.note_model.get_note(data["id"])
         if note is not None:
             self.windows.open(note)
             self.windows.show(note.id, focus=True)
         self._refresh_tray()
 
-    def _on_note_updated(self, data: dict):
+    def _on_note_updated(self, data: dict) -> None:
         note_id = data["id"]
         self.windows.set_property(note_id, "noteColor", data["color"])
         self.windows.set_property(note_id, "keepAbove", data["is_pinned"])
-        self.windows.set_property(note_id, "reminderText", reminders.short_label(data["reminder"]))
+        self.windows.set_property(
+            note_id, "reminderText", reminders.short_label(data["reminder"])
+        )
         self._refresh_tray()
 
-    def _on_note_deleted(self, note_id: str):
+    def _on_note_deleted(self, note_id: str) -> None:
         self.windows.close(note_id)
         self._refresh_tray()
 
     def _refresh_tray(self):
-        self.tray_manager.set_notes([
-            (n.id, NoteController.label_for(n), n.color)
-            for n in self.note_model.get_all_notes()
-        ])
+        self.tray_manager.set_notes(
+            [
+                (n.id, NoteController.label_for(n), n.color)
+                for n in self.note_model.get_all_notes()
+            ]
+        )
 
     # ===== Azioni =====
 
     def _new_note_position(self, width: int, height: int) -> Tuple[int, int]:
         """Posizione a cascata partendo dall'angolo in alto a destra dello schermo"""
-        screen = QGuiApplication.primaryScreen().availableGeometry()
+        primary_screen = QGuiApplication.primaryScreen()
+        assert primary_screen is not None
+        screen = primary_screen.availableGeometry()
         step = self._cascade % CASCADE_STEPS
         self._cascade += 1
         x = screen.right() - width - 48 - step * CASCADE_STEP
         y = screen.top() + 48 + step * CASCADE_STEP
-        return max(screen.left(), x), min(y, max(screen.top(), screen.bottom() - height))
+        return max(screen.left(), x), min(
+            y, max(screen.top(), screen.bottom() - height)
+        )
 
-    @pyqtSlot(result=str)
+    # PyQt6 stubs type ``result`` as a string name, but only the type object
+    # is accepted at runtime.
+    @pyqtSlot(result=str)  # type: ignore[arg-type]
     def create_new_note(self) -> str:
         """Crea una nuova nota e ne apre la finestra"""
         size = 250
@@ -163,7 +183,7 @@ class StikyNotesApp(QObject):
         return self.note_controller.create_note(x=x, y=y) or ""
 
     @pyqtSlot(str)
-    def show_note(self, note_id: str):
+    def show_note(self, note_id: str) -> None:
         """Mostra una nota (anche se era nascosta) in primo piano"""
         note = self.note_model.get_note(note_id)
         if note is None:
@@ -188,15 +208,26 @@ class StikyNotesApp(QObject):
         else:
             self.tray_manager.popup_notes_menu(QCursor.pos())
 
-    def on_pointer_reported(self, x: int, y: int, area_x: int, area_y: int,
-                            area_width: int, area_height: int):
+    def on_pointer_reported(
+        self,
+        x: int,
+        y: int,
+        area_x: int,
+        area_y: int,
+        area_width: int,
+        area_height: int,
+    ) -> None:
         """Risposta di KWin a ``show_tray_menu``"""
         if not self._pointer_timer.isActive():
             return
         self._pointer_timer.stop()
-        local_area = QGuiApplication.primaryScreen().virtualGeometry()
+        primary_screen = QGuiApplication.primaryScreen()
+        assert primary_screen is not None
+        local_area = primary_screen.virtualGeometry()
         kwin_area = QRect(area_x, area_y, area_width, area_height)
-        self.tray_manager.popup_notes_menu(kwin_pointer.to_local(x, y, kwin_area, local_area))
+        self.tray_manager.popup_notes_menu(
+            kwin_pointer.to_local(x, y, kwin_area, local_area)
+        )
 
     def show_about(self):
         """Finestra con le informazioni sul progetto (dal menu del vassoio)"""
@@ -235,9 +266,11 @@ class StikyNotesApp(QObject):
             # Non modale: le note restano utilizzabili mentre è aperta
             box.setModal(False)
             self._about_box = box
-        self._about_box.show()
-        self._about_box.raise_()
-        self._about_box.activateWindow()
+        about_box = self._about_box
+        assert about_box is not None
+        about_box.show()
+        about_box.raise_()
+        about_box.activateWindow()
 
     def show_all_notes(self):
         reopened = []
@@ -258,35 +291,44 @@ class StikyNotesApp(QObject):
     # ===== Bridge per QML (devono essere slot per essere visibili da QML) =====
 
     @pyqtSlot(str)
-    def hide_note(self, note_id: str):
+    def hide_note(self, note_id: str) -> None:
         note = self.note_model.get_note(note_id)
         if note is not None and note.is_visible:
             self.note_model.update_note(note_id, is_visible=False)
         self.windows.hide(note_id)
 
     @pyqtSlot(str, str)
-    def update_note_title(self, note_id: str, title: str):
+    def update_note_title(self, note_id: str, title: str) -> None:
         self.note_controller.update_note(note_id, title=title)
 
     @pyqtSlot(str, str, str)
-    def update_note_content(self, note_id: str, plain: str, rich: str):
+    def update_note_content(self, note_id: str, plain: str, rich: str) -> None:
         """Salva il testo: semplice (etichette, ricerca) e formattato (HTML)"""
         self.note_controller.update_note(note_id, content=plain, rich_content=rich)
 
     @pyqtSlot(str, str, int, int, int)
-    def format_text(self, note_id: str, action: str, start: int, end: int, cursor: int):
+    def format_text(
+        self, note_id: str, action: str, start: int, end: int, cursor: int
+    ) -> None:
         """Formattazione dalla barra o dalle scorciatoie (Ctrl+B/I/U)"""
         doc = self.windows.document(note_id)
         if doc is not None and action in text_format.ACTIONS:
             text_format.apply_format(doc, action, start, end, cursor)
 
-    @pyqtSlot(str, bool, bool, bool, bool, bool, result=str)
-    def show_text_menu(self, note_id: str, has_selection: bool, can_paste: bool,
-                       can_undo: bool, can_redo: bool, has_text: bool) -> str:
+    @pyqtSlot(str, bool, bool, bool, bool, bool, result=str)  # type: ignore[arg-type]
+    def show_text_menu(
+        self,
+        note_id: str,
+        has_selection: bool,
+        can_paste: bool,
+        can_undo: bool,
+        can_redo: bool,
+        has_text: bool,
+    ) -> str:
         """Menu del clic destro sul testo. Restituisce l'azione scelta ("" se
         nessuna); la esegue il QML sul TextEdit."""
         menu = QMenu()
-        actions = {}
+        actions: dict[QAction, str] = {}
 
         def add(target, key, label, icon, shortcut=None, enabled=True):
             action = target.addAction(QIcon.fromTheme(icon), label)
@@ -306,6 +348,7 @@ class StikyNotesApp(QObject):
         add(menu, "selectAll", "Seleziona tutto", "edit-select-all", "Ctrl+A", has_text)
         menu.addSeparator()
         fmt = menu.addMenu(QIcon.fromTheme("format-text-bold"), "Formato")
+        assert fmt is not None
         add(fmt, "bold", "Grassetto", "format-text-bold", "Ctrl+B")
         add(fmt, "italic", "Corsivo", "format-text-italic", "Ctrl+I")
         add(fmt, "underline", "Sottolineato", "format-text-underline", "Ctrl+U")
@@ -317,19 +360,25 @@ class StikyNotesApp(QObject):
         add(fmt, "clear", "Rimuovi formattazione", "edit-clear")
 
         chosen = menu.exec(QCursor.pos())
+        if chosen is None:
+            return ""
         return actions.get(chosen, "")
 
     # ===== Promemoria =====
 
     @pyqtSlot(str)
-    def edit_reminder(self, note_id: str):
+    def edit_reminder(self, note_id: str) -> None:
         """Imposta, modifica o rimuove il promemoria di una nota"""
         note = self.note_model.get_note(note_id)
         if note is None:
             return
-        action, when = reminder_dialog.ask_reminder(NoteController.label_for(note), note.reminder)
+        action, when = reminder_dialog.ask_reminder(
+            NoteController.label_for(note), note.reminder
+        )
         if action == reminder_dialog.SET and when is not None:
-            self.note_controller.update_note(note_id, reminder=reminders.serialize(when))
+            self.note_controller.update_note(
+                note_id, reminder=reminders.serialize(when)
+            )
             self.check_reminders()
         elif action == reminder_dialog.REMOVE:
             self.note_controller.update_note(note_id, reminder=None)
@@ -342,17 +391,20 @@ class StikyNotesApp(QObject):
             if reminders.is_due(note.reminder):
                 self._fire_reminder(note.id)
             else:
-                self.windows.set_property(note.id, "reminderText",
-                                          reminders.short_label(note.reminder))
+                self.windows.set_property(
+                    note.id, "reminderText", reminders.short_label(note.reminder)
+                )
 
-    def _fire_reminder(self, note_id: str):
+    def _fire_reminder(self, note_id: str) -> None:
         note = self.note_model.get_note(note_id)
         if note is None:
             return
         self.note_controller.update_note(note_id, reminder=None)
         self.show_note(note_id)
         self._last_reminder_note = note_id
-        self.tray_manager.notify("Promemoria", NoteController.label_for(note, max_len=80))
+        self.tray_manager.notify(
+            "Promemoria", NoteController.label_for(note, max_len=80)
+        )
 
     def _on_notification_clicked(self):
         if self._last_reminder_note:
@@ -360,7 +412,7 @@ class StikyNotesApp(QObject):
 
     # ===== Desktop virtuali =====
 
-    def apply_desktops(self, note_ids):
+    def apply_desktops(self, note_ids: list[str]) -> None:
         """Porta le note indicate sul desktop scelto (o su tutti) tramite KWin.
 
         La finestra viene riconosciuta da KWin con un titolo temporaneo
@@ -379,7 +431,9 @@ class StikyNotesApp(QObject):
             self.windows.set_property(note_id, "captionOverride", token)
 
         def run():
-            kwin_desktops.apply([(token, all_, index) for _id, token, all_, index in requests])
+            kwin_desktops.apply(
+                [(token, all_, index) for _id, token, all_, index in requests]
+            )
             QTimer.singleShot(KWIN_CAPTION_DELAY_MS, restore)
 
         def restore():
@@ -388,12 +442,14 @@ class StikyNotesApp(QObject):
 
         QTimer.singleShot(KWIN_CAPTION_DELAY_MS, run)
 
-    def _set_desktop(self, note_id: str, all_desktops: bool, index: int):
+    def _set_desktop(self, note_id: str, all_desktops: bool, index: int) -> None:
         self.note_model.update_note(note_id, all_desktops=all_desktops, desktop=index)
         self.apply_desktops([note_id])
 
     @pyqtSlot(str, int, int, int, int)
-    def update_note_geometry(self, note_id: str, x: int, y: int, width: int, height: int):
+    def update_note_geometry(
+        self, note_id: str, x: int, y: int, width: int, height: int
+    ) -> None:
         """Salva posizione e dimensioni (senza notificare: non cambia nulla per la UI)"""
         note = self.note_model.get_note(note_id)
         if note is None:
@@ -406,7 +462,7 @@ class StikyNotesApp(QObject):
             self.note_model.update_note(note_id, **changes)
 
     @pyqtSlot(str)
-    def show_note_menu(self, note_id: str):
+    def show_note_menu(self, note_id: str) -> None:
         """Menu della nota (pulsante ⋮ o clic destro sulla barra)"""
         note = self.note_model.get_note(note_id)
         if note is None:
@@ -414,17 +470,22 @@ class StikyNotesApp(QObject):
 
         menu = QMenu()
         new_action = menu.addAction("Nuova nota")
+        assert new_action is not None
         rename_action = menu.addAction("Rinomina…")
+        assert rename_action is not None
 
         color_menu = menu.addMenu("Colore")
+        assert color_menu is not None
         color_actions = {}
         for hex_, name in COLORS:
             action = color_menu.addAction(color_icon(hex_, square=True), name)
+            assert action is not None
             action.setCheckable(True)
             action.setChecked(hex_.lower() == note.color.lower())
             color_actions[action] = hex_
 
         above_action = menu.addAction("Sempre in primo piano")
+        assert above_action is not None
         above_action.setCheckable(True)
         above_action.setChecked(note.is_pinned)
 
@@ -433,13 +494,16 @@ class StikyNotesApp(QObject):
         names = kwin_desktops.desktop_names() if kwin_desktops.available() else []
         if names:
             desktop_menu = menu.addMenu("Desktop")
+            assert desktop_menu is not None
             all_action = desktop_menu.addAction("Tutti i desktop")
+            assert all_action is not None
             all_action.setCheckable(True)
             all_action.setChecked(note.all_desktops)
             desktop_actions[all_action] = (True, -1)
             desktop_menu.addSeparator()
             for index, name in enumerate(names):
                 action = desktop_menu.addAction(name)
+                assert action is not None
                 action.setCheckable(True)
                 action.setChecked(not note.all_desktops and note.desktop == index)
                 desktop_actions[action] = (False, index)
@@ -454,7 +518,9 @@ class StikyNotesApp(QObject):
 
         menu.addSeparator()
         hide_action = menu.addAction("Nascondi")
+        assert hide_action is not None
         delete_action = menu.addAction("Elimina…")
+        assert delete_action is not None
 
         chosen = menu.exec(QCursor.pos())
         if chosen is None:
@@ -483,7 +549,7 @@ class StikyNotesApp(QObject):
         elif chosen is delete_action:
             self.delete_note(note_id)
 
-    def delete_note(self, note_id: str):
+    def delete_note(self, note_id: str) -> None:
         """Elimina una nota, chiedendo conferma se non è vuota"""
         self.windows.flush_all()
         note = self.note_model.get_note(note_id)
@@ -529,7 +595,8 @@ def _parse_args(argv):
     parser.add_argument("--new", action="store_true", help="Crea una nuova nota")
     parser.add_argument("--show-all", action="store_true", help="Mostra tutte le note")
     parser.add_argument(
-        "--autostart", action="store_true",
+        "--autostart",
+        action="store_true",
         help="Avvio al login: mostra solo le note lasciate visibili",
     )
     # Gli argomenti sconosciuti (es. flag di Qt) vengono ignorati
@@ -617,7 +684,9 @@ def main():
     stiky_app.cleanup()  # idempotente
     single_instance.unregister()
     stiky_app.windows.destroy_all()
-    engine.rootContext().setContextProperty("stikyApp", None)
+    root_context = engine.rootContext()
+    assert root_context is not None
+    root_context.setContextProperty("stikyApp", None)
     del engine
     del stiky_app
 

@@ -32,19 +32,21 @@ class NoteWindowManager(QObject):
 
     def open(self, note: NoteData) -> Any:
         """Crea la finestra di una nota (visibile solo se la nota lo è)"""
-        window = self._component.createWithInitialProperties({
-            "noteId": note.id,
-            "noteTitle": note.title,
-            # Le note delle versioni precedenti hanno solo il testo semplice
-            "noteHtml": note.rich_content or plain_to_html(note.content),
-            "reminderText": reminders.short_label(note.reminder),
-            "noteColor": note.color,
-            "keepAbove": note.is_pinned,
-            "x": note.x,
-            "y": note.y,
-            "width": note.width,
-            "height": note.height,
-        })
+        window: Any = self._component.createWithInitialProperties(
+            {
+                "noteId": note.id,
+                "noteTitle": note.title,
+                # Le note delle versioni precedenti hanno solo il testo semplice
+                "noteHtml": note.rich_content or plain_to_html(note.content),
+                "reminderText": reminders.short_label(note.reminder),
+                "noteColor": note.color,
+                "keepAbove": note.is_pinned,
+                "x": note.x,
+                "y": note.y,
+                "width": note.width,
+                "height": note.height,
+            }
+        )
         if window is None:
             errors = "\n".join(e.toString() for e in self._component.errors())
             raise RuntimeError(f"Impossibile creare la finestra della nota:\n{errors}")
@@ -55,7 +57,7 @@ class NoteWindowManager(QObject):
     def get(self, note_id: str) -> Any:
         return self._windows.get(note_id)
 
-    def show(self, note_id: str, focus: bool = False):
+    def show(self, note_id: str, focus: bool = False) -> None:
         """Mostra la nota e la porta in primo piano"""
         window = self._windows.get(note_id)
         if window is None:
@@ -67,12 +69,12 @@ class NoteWindowManager(QObject):
         else:
             window.requestActivate()
 
-    def hide(self, note_id: str):
+    def hide(self, note_id: str) -> None:
         window = self._windows.get(note_id)
         if window is not None:
             window.hide()
 
-    def set_property(self, note_id: str, name: str, value: Any):
+    def set_property(self, note_id: str, name: str, value: Any) -> None:
         window = self._windows.get(note_id)
         if window is not None and window.property(name) != value:
             window.setProperty(name, value)
@@ -93,12 +95,12 @@ class NoteWindowManager(QObject):
     def ids(self):
         return list(self._windows)
 
-    def edit_title(self, note_id: str):
+    def edit_title(self, note_id: str) -> None:
         window = self._windows.get(note_id)
         if window is not None:
             QMetaObject.invokeMethod(window, "editTitle")
 
-    def close(self, note_id: str):
+    def close(self, note_id: str) -> None:
         """Distrugge la finestra di una nota eliminata"""
         window = self._windows.pop(note_id, None)
         if window is not None:

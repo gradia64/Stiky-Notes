@@ -4,6 +4,7 @@
 import os
 import sys
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -17,7 +18,7 @@ from kde_plasma_stiky_notes.platform import autostart  # noqa: E402
 
 QSETTINGS = "kde_plasma_stiky_notes.core.note_model.QSettings"
 
-_QAPP = []
+_QAPP: list[Any] = []
 
 
 def _qapp():
@@ -54,8 +55,9 @@ class TestNoteData:
         assert note.created_at
 
     def test_serialization_roundtrip(self):
-        original = NoteData(title="T", content="C", color="#6BCF7F", x=100, y=200,
-                            tags=["tag1", "tag2"])
+        original = NoteData(
+            title="T", content="C", color="#6BCF7F", x=100, y=200, tags=["tag1", "tag2"]
+        )
         data = original.to_dict()
         assert data["title"] == "T"
         assert data["tags"] == ["tag1", "tag2"]
@@ -116,7 +118,7 @@ class TestNoteModel:
 
 class TestNoteController:
     def test_create_note_emits(self, controller):
-        created = []
+        created: list[dict] = []
         controller.note_created.connect(created.append)
         note_id = controller.create_note(title="Nota", content="Contenuto")
         assert controller.model.get_note(note_id).title == "Nota"
@@ -124,7 +126,7 @@ class TestNoteController:
 
     def test_update_note_emits(self, controller):
         note_id = controller.create_note(title="Original")
-        updated = []
+        updated: list[dict] = []
         controller.note_updated.connect(updated.append)
         assert controller.update_note(note_id, title="Updated", color="#4A90E2") is True
         assert updated[0]["title"] == "Updated"
@@ -132,7 +134,7 @@ class TestNoteController:
 
     def test_delete_note_emits(self, controller):
         note_id = controller.create_note(title="To Delete")
-        deleted = []
+        deleted: list[str] = []
         controller.note_deleted.connect(deleted.append)
         assert controller.delete_note(note_id) is True
         assert deleted == [note_id]
@@ -165,7 +167,10 @@ class TestAutostart:
             (system / "autostart" / "stiky-notes.desktop").write_text(
                 "[Desktop Entry]\nHidden=false\n"
             )
-        return {"XDG_CONFIG_HOME": str(tmp_path / "home"), "XDG_CONFIG_DIRS": str(system)}
+        return {
+            "XDG_CONFIG_HOME": str(tmp_path / "home"),
+            "XDG_CONFIG_DIRS": str(system),
+        }
 
     def test_toggle_with_system_entry(self, tmp_path):
         user_file = tmp_path / "home" / "autostart" / "stiky-notes.desktop"
@@ -195,7 +200,10 @@ class TestAutostart:
 
 def test_label_for():
     assert NoteController.label_for(NoteData(title="  Spesa ")) == "Spesa"
-    assert NoteController.label_for(NoteData(content="\n  prima riga\nseconda")) == "prima riga"
+    assert (
+        NoteController.label_for(NoteData(content="\n  prima riga\nseconda"))
+        == "prima riga"
+    )
     assert NoteController.label_for(NoteData()) == "Nota vuota"
     assert NoteController.label_for(NoteData(title="x" * 60)).endswith("…")
 
@@ -218,7 +226,9 @@ def stiky_app():
         yield stiky
         stiky.cleanup()
         stiky.windows.destroy_all()
-        engine.rootContext().setContextProperty("stikyApp", None)
+        root_context = engine.rootContext()
+        assert root_context is not None
+        root_context.setContextProperty("stikyApp", None)
         del engine
     assert app is not None
 
@@ -253,8 +263,10 @@ class TestStikyNotesApp:
         stiky_app.hide_all_notes()
 
         tray = stiky_app.tray_manager
-        with patch("kde_plasma_stiky_notes.main.kwin_pointer") as pointer, \
-                patch("kde_plasma_stiky_notes.main.QCursor") as cursor:
+        with (
+            patch("kde_plasma_stiky_notes.main.kwin_pointer") as pointer,
+            patch("kde_plasma_stiky_notes.main.QCursor") as cursor,
+        ):
             pointer.request.return_value = False
             cursor.pos.return_value = QPoint(40, 40)
             tray._on_tray_icon_activated(QSystemTrayIcon.ActivationReason.Trigger)
@@ -263,9 +275,14 @@ class TestStikyNotesApp:
         assert not stiky_app.windows.get(first).isVisible()
         assert not stiky_app.windows.get(second).isVisible()
         labels = [a.text() for a in tray._click_menu.actions() if not a.isSeparator()]
-        assert labels == ["Nota vuota", "Spesa", "Nuova nota",
-                          "Mostra tutte le note", "Nascondi tutte le note",
-                          "Informazioni su Stiky-notes"]
+        assert labels == [
+            "Nota vuota",
+            "Spesa",
+            "Nuova nota",
+            "Mostra tutte le note",
+            "Nascondi tutte le note",
+            "Informazioni su Stiky-notes",
+        ]
 
         # Scegliere una nota richiama solo quella
         tray._click_menu.actions()[1].trigger()
@@ -280,15 +297,22 @@ class TestStikyNotesApp:
         from PyQt6.QtCore import QPoint
         from PyQt6.QtGui import QGuiApplication
 
-        area = QGuiApplication.primaryScreen().virtualGeometry()
-        with patch("kde_plasma_stiky_notes.main.kwin_pointer.request", return_value=True), \
-                patch.dict(os.environ, {"XDG_SESSION_TYPE": "wayland"}), \
-                patch.object(stiky_app.tray_manager, "popup_notes_menu") as popup:
+        primary_screen = QGuiApplication.primaryScreen()
+        assert primary_screen is not None
+        area = primary_screen.virtualGeometry()
+        with (
+            patch(
+                "kde_plasma_stiky_notes.main.kwin_pointer.request", return_value=True
+            ),
+            patch.dict(os.environ, {"XDG_SESSION_TYPE": "wayland"}),
+            patch.object(stiky_app.tray_manager, "popup_notes_menu") as popup,
+        ):
             stiky_app.show_tray_menu()
             popup.assert_not_called()
             # KWin vede lo stesso desktop a scala doppia
             stiky_app.on_pointer_reported(
-                200, 100, 0, 0, area.width() * 2, area.height() * 2)
+                200, 100, 0, 0, area.width() * 2, area.height() * 2
+            )
             popup.assert_called_once_with(QPoint(100, 50))
             # Una risposta non attesa viene ignorata
             stiky_app.on_pointer_reported(1, 1, 0, 0, 10, 10)
@@ -388,12 +412,14 @@ class TestStikyNotesApp:
                 entries = {a.text(): a for a in menu.actions()}
                 menus.append({t: a.isEnabled() for t, a in entries.items() if t})
                 return entries[label]
+
             return fake_exec
 
-        QApplication.clipboard().clear()
+        clipboard = QApplication.clipboard()
+        assert clipboard is not None
         with patch.object(QMenu, "exec", choose("Copia")):
             QMetaObject.invokeMethod(window, "showTextMenu")
-        assert QApplication.clipboard().text() == "uno"
+        assert clipboard.text() == "uno"
         assert menus[0]["Copia"] and menus[0]["Taglia"] and menus[0]["Incolla"] is False
 
         body.setProperty("cursorPosition", body.property("length"))
@@ -426,7 +452,9 @@ class TestStikyNotesApp:
     def test_due_reminder_fires(self, stiky_app):
         note_id = stiky_app.create_new_note()
         stiky_app.hide_note(note_id)
-        stiky_app.note_controller.update_note(note_id, reminder="2020-01-01T09:00:00+01:00")
+        stiky_app.note_controller.update_note(
+            note_id, reminder="2020-01-01T09:00:00+01:00"
+        )
         with patch.object(stiky_app.tray_manager, "notify") as notify:
             stiky_app.check_reminders()
         note = stiky_app.note_model.get_note(note_id)
@@ -524,7 +552,9 @@ class TestTextFormat:
         assert first.textList() is not None and second.textList() is not None
         assert first.textList().format().style() == QTextListFormat.Style.ListDisc
         apply_format(doc, "numbered", 0, 15, 15)
-        assert doc.begin().textList().format().style() == QTextListFormat.Style.ListDecimal
+        assert (
+            doc.begin().textList().format().style() == QTextListFormat.Style.ListDecimal
+        )
         apply_format(doc, "numbered", 0, 15, 15)
         assert doc.begin().textList() is None and doc.begin().next().textList() is None
 
@@ -573,7 +603,9 @@ class TestReminders:
         at = reminders.now().replace(hour=10, minute=0)
         today = at.replace(hour=14, minute=30)
         assert reminders.short_label(reminders.serialize(today), at) == "14:30"
-        in_two_days = reminders.short_label(reminders.serialize(today + timedelta(days=2)), at)
+        in_two_days = reminders.short_label(
+            reminders.serialize(today + timedelta(days=2)), at
+        )
         assert in_two_days.endswith("14:30") and len(in_two_days.split()) == 2
         far = reminders.short_label(reminders.serialize(today + timedelta(days=40)), at)
         assert "/" in far
@@ -599,7 +631,9 @@ class TestReminderDialog:
         _qapp()
 
         def fake_exec(dialog):
-            ok = interact(dialog, dialog.findChild(QDateEdit), dialog.findChild(QTimeEdit))
+            ok = interact(
+                dialog, dialog.findChild(QDateEdit), dialog.findChild(QTimeEdit)
+            )
             return QDialog.DialogCode.Accepted if ok else QDialog.DialogCode.Rejected
 
         with patch.object(QDialog, "exec", fake_exec):
@@ -617,15 +651,21 @@ class TestReminderDialog:
         def interact(dialog, date_edit, time_edit):
             date_edit.setDate(tomorrow)
             time_edit.setSelectedSection(QTimeEdit.Section.HourSection)
-            QTest.keyClicks(time_edit, "07")
-            QTest.keyClick(time_edit, Qt.Key.Key_Right)
+            # QTest methods are static at runtime but typed as instance
+            # methods in the PyQt6 stubs.
+            QTest.keyClicks(time_edit, "07")  # type: ignore[call-arg, arg-type]
+            QTest.keyClick(time_edit, Qt.Key.Key_Right)  # type: ignore[call-overload]
             time_edit.setSelectedSection(QTimeEdit.Section.MinuteSection)
-            QTest.keyClicks(time_edit, "45")
+            QTest.keyClicks(time_edit, "45")  # type: ignore[call-arg, arg-type]
             return True
 
         action, when = self._run(interact)
         assert action == reminder_dialog.SET
-        assert (when.year, when.month, when.day) == (tomorrow.year(), tomorrow.month(), tomorrow.day())
+        assert (when.year, when.month, when.day) == (
+            tomorrow.year(),
+            tomorrow.month(),
+            tomorrow.day(),
+        )
         assert (when.hour, when.minute) == (7, 45)
         assert when.tzinfo is not None
 
@@ -636,8 +676,12 @@ class TestReminderDialog:
         seen = {}
 
         def interact(dialog, date_edit, time_edit):
-            ok = dialog.findChild(QDialogButtonBox).button(QDialogButtonBox.StandardButton.Ok)
-            warning = [w for w in dialog.findChildren(QLabel) if "passato" in w.text()][0]
+            ok = dialog.findChild(QDialogButtonBox).button(
+                QDialogButtonBox.StandardButton.Ok
+            )
+            warning = [w for w in dialog.findChildren(QLabel) if "passato" in w.text()][
+                0
+            ]
             seen["future"] = (ok.isEnabled(), warning.isHidden())
             date_edit.setDate(QDate.currentDate().addDays(-1))
             seen["past"] = (ok.isEnabled(), warning.isHidden())

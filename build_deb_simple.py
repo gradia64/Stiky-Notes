@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 import os
+import shutil
 import subprocess
 import tempfile
-import shutil
 from pathlib import Path
+
 
 def run_cmd(cmd, cwd=None, **kwargs):
     env = os.environ.copy()
-    env['TMPDIR'] = '/tmp/dpkg-build'
-    os.makedirs(env['TMPDIR'], exist_ok=True)
-    result = subprocess.run(cmd, shell=True, cwd=cwd, env=env, capture_output=True, text=True, **kwargs)
+    env["TMPDIR"] = "/tmp/dpkg-build"
+    os.makedirs(env["TMPDIR"], exist_ok=True)
+    result = subprocess.run(
+        cmd, shell=True, cwd=cwd, env=env, capture_output=True, text=True, **kwargs
+    )
     return result
+
 
 def main():
     project_root = Path(__file__).resolve().parent
@@ -42,11 +46,17 @@ def main():
         for size in (16, 22, 24, 32, 48, 64, 128, 256):
             icon_src = project_root / "debian" / "icons" / f"stiky-notes-{size}.png"
             if icon_src.exists():
-                shutil.copy(icon_src, pkgdir / f"usr/share/icons/hicolor/{size}x{size}/apps/stiky-notes.png")
+                shutil.copy(
+                    icon_src,
+                    pkgdir
+                    / f"usr/share/icons/hicolor/{size}x{size}/apps/stiky-notes.png",
+                )
 
         # Icona scalabile (SVG)
-        shutil.copy(src_dir / "icons" / "stiky-notes.svg",
-                    pkgdir / "usr/share/icons/hicolor/scalable/apps/stiky-notes.svg")
+        shutil.copy(
+            src_dir / "icons" / "stiky-notes.svg",
+            pkgdir / "usr/share/icons/hicolor/scalable/apps/stiky-notes.svg",
+        )
 
         wrapper = pkgdir / "usr/bin/stiky-notes"
         wrapper.write_text("""#!/bin/sh
@@ -55,12 +65,18 @@ exec python3 -m kde_plasma_stiky_notes "$@"
 """)
         wrapper.chmod(0o755)
 
-        shutil.copy(project_root / "debian" / "stiky-notes.desktop",
-                    pkgdir / "usr/share/applications/")
-        shutil.copy(project_root / "debian" / "stiky-notes.autostart",
-                    pkgdir / "etc/xdg/autostart/stiky-notes.desktop")
-        shutil.copy(project_root / "debian" / "org.kde.StikyNotes.service",
-                    pkgdir / "usr/share/dbus-1/services/")
+        shutil.copy(
+            project_root / "debian" / "stiky-notes.desktop",
+            pkgdir / "usr/share/applications/",
+        )
+        shutil.copy(
+            project_root / "debian" / "stiky-notes.autostart",
+            pkgdir / "etc/xdg/autostart/stiky-notes.desktop",
+        )
+        shutil.copy(
+            project_root / "debian" / "org.kde.StikyNotes.service",
+            pkgdir / "usr/share/dbus-1/services/",
+        )
 
         # Normalizza i permessi secondo la policy Debian:
         # directory 755, file 644, script 755
@@ -72,7 +88,7 @@ exec python3 -m kde_plasma_stiky_notes "$@"
                 p.chmod(0o755)
             else:
                 p.chmod(0o644)
-        
+
         (pkgdir / "DEBIAN" / "control").write_text("""Package: stiky-notes
 Version: 0.4.1-1
 Section: utils
@@ -99,7 +115,7 @@ Description: Sticky notes application for KDE Plasma
   * Single instance controlled over D-Bus (org.kde.StikyNotes)
   * Optional autostart on login
 """)
-        
+
         postinst = pkgdir / "DEBIAN" / "postinst"
         postinst.write_text("""#!/bin/sh
 set -e
@@ -108,7 +124,7 @@ gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor 2>/dev/null || true
 exit 0
 """)
         postinst.chmod(0o755)
-        
+
         postrm = pkgdir / "DEBIAN" / "postrm"
         postrm.write_text("""#!/bin/sh
 set -e
@@ -117,10 +133,10 @@ gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor 2>/dev/null || true
 exit 0
 """)
         postrm.chmod(0o755)
-        
+
         os.chdir(tmpdir)
-        result = run_cmd(f"dpkg-deb --build --root-owner-group stiky-notes_0.4.1-1_all")
-        
+        result = run_cmd("dpkg-deb --build --root-owner-group stiky-notes_0.4.1-1_all")
+
         if result.returncode == 0:
             generated = Path(tmpdir) / "stiky-notes_0.4.1-1_all.deb"
             output_deb = project_root / "stiky-notes_0.4.1-1_all.deb"
@@ -136,6 +152,8 @@ exit 0
             print(f"✗ Build failed: {result.stderr}")
             return 1
 
+
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

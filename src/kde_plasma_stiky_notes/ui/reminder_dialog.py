@@ -23,7 +23,9 @@ SET = "set"
 REMOVE = "remove"
 
 
-def ask_reminder(note_label: str, current: Optional[str]) -> Tuple[str, Optional[datetime]]:
+def ask_reminder(
+    note_label: str, current: Optional[str]
+) -> Tuple[str, Optional[datetime]]:
     """Chiede data e ora del promemoria. Restituisce (esito, data/ora)."""
     dialog = QDialog()
     dialog.setWindowTitle("Promemoria")
@@ -58,6 +60,7 @@ def ask_reminder(note_label: str, current: Optional[str]) -> Tuple[str, Optional
         QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
     )
     ok_button = buttons.button(QDialogButtonBox.StandardButton.Ok)
+    assert ok_button is not None
 
     def chosen_datetime() -> QDateTime:
         return QDateTime(date_edit.date(), time_edit.time())
@@ -72,17 +75,20 @@ def ask_reminder(note_label: str, current: Optional[str]) -> Tuple[str, Optional
     validate()
     remove_button = None
     if current:
-        remove_button = buttons.addButton("Rimuovi promemoria",
-                                          QDialogButtonBox.ButtonRole.DestructiveRole)
+        remove_button = buttons.addButton(
+            "Rimuovi promemoria", QDialogButtonBox.ButtonRole.DestructiveRole
+        )
     layout.addWidget(buttons)
 
     result = {"action": CANCEL}
     buttons.accepted.connect(dialog.accept)
     buttons.rejected.connect(dialog.reject)
     if remove_button is not None:
+
         def on_remove():
             result["action"] = REMOVE
             dialog.accept()
+
         remove_button.clicked.connect(on_remove)
 
     if dialog.exec() != QDialog.DialogCode.Accepted:

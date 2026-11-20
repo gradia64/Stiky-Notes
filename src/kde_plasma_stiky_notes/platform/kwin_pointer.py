@@ -41,6 +41,8 @@ def to_local(x: int, y: int, kwin_area: QRect, local_area: QRect) -> QPoint:
     if kwin_area.width() <= 0 or kwin_area.height() <= 0:
         return QPoint(x, y)
     return QPoint(
-        local_area.x() + round((x - kwin_area.x()) * local_area.width() / kwin_area.width()),
-        local_area.y() + round((y - kwin_area.y()) * local_area.height() / kwin_area.height()),
+        local_area.x()
+        + round((x - kwin_area.x()) * local_area.width() / kwin_area.width()),
+        local_area.y()
+        + round((y - kwin_area.y()) * local_area.height() / kwin_area.height()),
     )

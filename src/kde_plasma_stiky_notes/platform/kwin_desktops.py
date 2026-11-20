@@ -60,14 +60,18 @@ def available() -> bool:
     bus = _bus()
     if not bus.isConnected():
         return False
-    return QDBusInterface(KWIN_SERVICE, "/Scripting", "org.kde.kwin.Scripting", bus).isValid()
+    return QDBusInterface(
+        KWIN_SERVICE, "/Scripting", "org.kde.kwin.Scripting", bus
+    ).isValid()
 
 
 def desktop_names() -> List[str]:
     """Nomi dei desktop virtuali, nell'ordine (vuoto se KWin non risponde)"""
     msg = QDBusMessage.createMethodCall(
-        KWIN_SERVICE, "/VirtualDesktopManager",
-        "org.freedesktop.DBus.Properties", "Get",
+        KWIN_SERVICE,
+        "/VirtualDesktopManager",
+        "org.freedesktop.DBus.Properties",
+        "Get",
     )
     msg.setArguments(["org.kde.KWin.VirtualDesktopManager", "desktops"])
     reply = _bus().call(msg)
@@ -84,7 +88,9 @@ def desktop_names() -> List[str]:
 def run_script(source: str, name: str = SCRIPT_NAME) -> bool:
     """Carica ed esegue uno script KWin. True se è stato eseguito."""
     bus = _bus()
-    scripting = QDBusInterface(KWIN_SERVICE, "/Scripting", "org.kde.kwin.Scripting", bus)
+    scripting = QDBusInterface(
+        KWIN_SERVICE, "/Scripting", "org.kde.kwin.Scripting", bus
+    )
     if not scripting.isValid():
         return False
 
@@ -95,13 +101,17 @@ def run_script(source: str, name: str = SCRIPT_NAME) -> bool:
         # Uno script rimasto caricato (es. dopo un crash) impedirebbe il caricamento
         scripting.call("unloadScript", name)
         reply = scripting.call("loadScript", path, name)
-        if reply.type() == QDBusMessage.MessageType.ErrorMessage or not reply.arguments():
+        if (
+            reply.type() == QDBusMessage.MessageType.ErrorMessage
+            or not reply.arguments()
+        ):
             return False
         script_id = reply.arguments()[0]
         if script_id < 0:
             return False
-        script = QDBusInterface(KWIN_SERVICE, f"/Scripting/Script{script_id}",
-                                "org.kde.kwin.Script", bus)
+        script = QDBusInterface(
+            KWIN_SERVICE, f"/Scripting/Script{script_id}", "org.kde.kwin.Script", bus
+        )
         ok = script.call("run").type() != QDBusMessage.MessageType.ErrorMessage
         scripting.call("unloadScript", name)
         return ok

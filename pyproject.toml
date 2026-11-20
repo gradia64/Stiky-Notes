@@ -52,7 +52,7 @@ target-version = ['py39', 'py310', 'py311', 'py312']
 
 [tool.isort]
 profile = "black"
-known-first-party = ["kde_plasma_stiky_notes"]
+known_first_party = ["kde_plasma_stiky_notes"]
 
 [tool.mypy]
 python_version = "3.9"

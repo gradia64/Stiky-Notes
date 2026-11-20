@@ -6,10 +6,10 @@ Ogni nota è un'istanza di NoteData, salvata con QSettings sotto la chiave
 ``note_<id>`` a ogni modifica (~/.config/StikyNotes/NoteModel.conf).
 """
 
+import uuid
 from dataclasses import dataclass, field, fields
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-import uuid
 
 from PyQt6.QtCore import QObject, QSettings
 
@@ -97,7 +97,7 @@ class NoteModel(QObject):
     def _storage_key(note_id: str) -> str:
         return f"note_{note_id}"
 
-    def _save_note_to_storage(self, note: NoteData):
+    def _save_note_to_storage(self, note: NoteData) -> None:
         self._settings.setValue(self._storage_key(note.id), note.to_dict())
 
     def _load_notes_from_storage(self):
@@ -120,17 +120,29 @@ class NoteModel(QObject):
 
     # ===== API =====
 
-    def add_note(self, title: str = "", content: str = "", x: int = 0, y: int = 0,
-                 color: str = "#FFD93D") -> NoteData:
+    def add_note(
+        self,
+        title: str = "",
+        content: str = "",
+        x: int = 0,
+        y: int = 0,
+        color: str = "#FFD93D",
+    ) -> NoteData:
         """Crea una nuova nota e la salva"""
-        note = NoteData(title=title, content=content, x=x, y=y, color=color,
-                        z_index=self._next_z_index)
+        note = NoteData(
+            title=title,
+            content=content,
+            x=x,
+            y=y,
+            color=color,
+            z_index=self._next_z_index,
+        )
         self._next_z_index += 1
         self._notes[note.id] = note
         self._save_note_to_storage(note)
         return note
 
-    def update_note(self, note_id: str, **kwargs) -> bool:
+    def update_note(self, note_id: str, **kwargs: Any) -> bool:
         """Aggiorna i campi indicati di una nota esistente"""
         note = self._notes.get(note_id)
         if note is None:
@@ -160,4 +172,6 @@ class NoteModel(QObject):
         ordine alfabetico dell'UUID: l'ordine di inserimento non sopravvive
         al riavvio.
         """
-        return sorted(self._notes.values(), key=lambda n: (not n.is_pinned, n.created_at))
+        return sorted(
+            self._notes.values(), key=lambda n: (not n.is_pinned, n.created_at)
+        )
