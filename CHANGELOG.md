@@ -5,6 +5,12 @@ Tutte le modifiche significative di questo progetto sono documentate in questo f
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/),
 e questo progetto aderisce a [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.4.2] - 2026-11-20
+
+### Cambiato
+- Codice riformattato con ruff e completato con le annotazioni di tipo;
+  nessun cambiamento nel comportamento dell'app
+
 ## [0.4.1] - 2026-11-11
 
 ### Corretto
