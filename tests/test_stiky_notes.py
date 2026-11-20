@@ -383,6 +383,28 @@ class TestStikyNotesApp:
         body = window.findChild(QObject, "body")
         assert body.property("length") == len("Riga 1\nRiga 2")
 
+    def test_enter_on_empty_list_item_leaves_list(self, stiky_app):
+        from PyQt6.QtCore import QEvent, QObject, Qt
+        from PyQt6.QtGui import QKeyEvent, QTextCursor
+        from PyQt6.QtWidgets import QApplication
+
+        note_id = stiky_app.create_new_note()
+        window = stiky_app.windows.get(note_id)
+        body = window.findChild(QObject, "body")
+        doc = stiky_app.windows.document(note_id)
+        QTextCursor(doc).insertText("voce")
+        stiky_app.format_text(note_id, "numbered", 0, 0, 0)
+        body.setProperty("cursorPosition", 4)
+        for _ in range(2):
+            for kind in (QEvent.Type.KeyPress, QEvent.Type.KeyRelease):
+                event = QKeyEvent(
+                    kind, Qt.Key.Key_Return, Qt.KeyboardModifier.NoModifier, "\r"
+                )
+                QApplication.sendEvent(body, event)
+        last = doc.lastBlock()
+        assert doc.blockCount() == 2
+        assert last.textList() is None and last.blockFormat().indent() == 0
+
     def test_format_bold_via_window_document(self, stiky_app):
         from PyQt6.QtGui import QFont, QTextCursor
 
@@ -557,6 +579,60 @@ class TestTextFormat:
         )
         apply_format(doc, "numbered", 0, 15, 15)
         assert doc.begin().textList() is None and doc.begin().next().textList() is None
+
+    def test_enter_and_backspace_in_lists(self, doc):
+        from kde_plasma_stiky_notes.ui.text_format import apply_format, list_key
+
+        apply_format(doc, "bullet", 0, 0, 0)
+        # Fuori dagli elenchi i tasti restano al TextEdit
+        assert list_key(doc, "enter", len("prima riga") + 1) == -1
+        # Invio su una voce piena: nuova voce dello stesso elenco
+        pos = list_key(doc, "enter", len("prima riga"))
+        assert pos == len("prima riga") + 1
+        assert doc.begin().next().textList() is doc.begin().textList()
+        # Invio sulla voce vuota: esce dall'elenco senza rientro
+        assert list_key(doc, "enter", pos) == pos
+        block = doc.begin().next()
+        assert block.textList() is None and block.blockFormat().indent() == 0
+        # Backspace all'inizio di una voce: la toglie, senza rientro
+        assert list_key(doc, "backspace", 3) == -1
+        assert list_key(doc, "backspace", 0) == 0
+        first = doc.begin()
+        assert first.textList() is None and first.blockFormat().indent() == 0
+        assert first.text() == "prima riga"
+
+    def test_list_marker_ignores_text_format(self, doc):
+        from PyQt6.QtGui import QFont
+
+        from kde_plasma_stiky_notes.ui.text_format import apply_format, list_key
+
+        apply_format(doc, "bullet", 0, 0, 0)
+        # Grassetto su tutta la voce: il simbolo resta normale
+        apply_format(doc, "bold", 0, len("prima riga"), 0)
+        first = doc.begin()
+        assert first.charFormat().fontWeight() != QFont.Weight.Bold
+        assert self._fmt(doc, 3).fontWeight() == QFont.Weight.Bold
+        list_key(doc, "enter", len("prima riga"))
+        assert doc.begin().next().charFormat().fontWeight() != QFont.Weight.Bold
+
+    def test_normalize_lists_repairs_old_notes(self):
+        from PyQt6.QtGui import QFont, QTextDocument
+
+        from kde_plasma_stiky_notes.ui.text_format import normalize_lists
+
+        _qapp()
+        doc = QTextDocument()
+        doc.setHtml(
+            "<ul><li>uno</li>"
+            '<li style="font-weight:700;"><b>due</b></li></ul>'
+            '<p style="-qt-block-indent:1;">dopo</p>'
+        )
+        assert normalize_lists(doc) is True
+        second, after = doc.begin().next(), doc.begin().next().next()
+        assert second.charFormat().fontWeight() != QFont.Weight.Bold
+        assert after.blockFormat().indent() == 0
+        assert not doc.isUndoAvailable()
+        assert normalize_lists(doc) is False
 
     def test_unknown_action(self, doc):
         from kde_plasma_stiky_notes.ui.text_format import apply_format

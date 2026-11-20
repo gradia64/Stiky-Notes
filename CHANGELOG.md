@@ -5,6 +5,17 @@ Tutte le modifiche significative di questo progetto sono documentate in questo f
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/),
 e questo progetto aderisce a [Semantic Versioning](https://semver.org/lang/it/).
 
+## [Non rilasciato]
+
+### Corretto
+- Elenchi puntati e numerati: il pallino o il numero di una voce in
+  grassetto (o con un altro font) non esce più disallineato rispetto alle
+  altre voci
+- Dopo un elenco il testo non resta più rientrato: Invio su una voce vuota
+  chiude l'elenco e Backspace all'inizio di una voce la riporta a testo
+  normale, senza rientro. Le note già salvate vengono sistemate
+  all'apertura
+
 ## [0.4.2] - 2026-11-20
 
 ### Cambiato

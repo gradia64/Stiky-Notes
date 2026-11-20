@@ -315,6 +315,15 @@ class StikyNotesApp(QObject):
         if doc is not None and action in text_format.ACTIONS:
             text_format.apply_format(doc, action, start, end, cursor)
 
+    @pyqtSlot(str, str, int, result=int)  # type: ignore[arg-type]
+    def list_key(self, note_id: str, key: str, cursor: int) -> int:
+        """Invio/Backspace dentro un elenco: nuova posizione del cursore,
+        o -1 se il tasto va lasciato al TextEdit"""
+        doc = self.windows.document(note_id)
+        if doc is None:
+            return -1
+        return text_format.list_key(doc, key, cursor)
+
     @pyqtSlot(str, bool, bool, bool, bool, bool, result=str)  # type: ignore[arg-type]
     def show_text_menu(
         self,

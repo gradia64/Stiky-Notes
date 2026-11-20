@@ -282,6 +282,27 @@ Window {
             onTextChanged: if (text !== note.savedHtml) saveTimer.restart()
             onCursorRectangleChanged: flick.ensureVisible(cursorRectangle)
 
+            // Invio e Backspace negli elenchi: li gestisce Python, così Invio
+            // su una voce vuota chiude l'elenco e il testo non resta rientrato
+            Keys.onPressed: function (event) {
+                if (event.modifiers !== Qt.NoModifier && event.modifiers !== Qt.KeypadModifier)
+                    return;
+                if (body.selectionStart !== body.selectionEnd)
+                    return;
+                var key = "";
+                if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
+                    key = "enter";
+                else if (event.key === Qt.Key_Backspace)
+                    key = "backspace";
+                if (key === "")
+                    return;
+                var pos = stikyApp.list_key(noteId, key, body.cursorPosition);
+                if (pos >= 0) {
+                    body.cursorPosition = pos;
+                    event.accepted = true;
+                }
+            }
+
             // Clic destro: menu Taglia/Copia/Incolla… (il clic sinistro passa al testo)
             MouseArea {
                 anchors.fill: parent

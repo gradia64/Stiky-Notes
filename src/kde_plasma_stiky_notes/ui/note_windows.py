@@ -14,7 +14,7 @@ from PyQt6.QtQuick import QQuickTextDocument
 
 from ..core import reminders
 from ..core.note_model import NoteData
-from .text_format import plain_to_html
+from .text_format import normalize_lists, plain_to_html
 
 QML_FILE = Path(__file__).resolve().parent.parent / "qml" / "NoteWindow.qml"
 
@@ -51,6 +51,11 @@ class NoteWindowManager(QObject):
             errors = "\n".join(e.toString() for e in self._component.errors())
             raise RuntimeError(f"Impossibile creare la finestra della nota:\n{errors}")
         self._windows[note.id] = window
+        doc = self.document(note.id)
+        if doc is not None:
+            # Elenchi rovinati dalle versioni precedenti: il TextEdit li
+            # salva di nuovo corretti alla prima occasione
+            normalize_lists(doc)
         window.setVisible(note.is_visible)
         return window
 
